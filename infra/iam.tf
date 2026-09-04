@@ -58,6 +58,15 @@ resource "aws_iam_role_policy" "apprunner_instance" {
           aws_secretsmanager_secret.auth_secret.arn,
         ]
       },
+      {
+        Sid    = "BedrockInvoke"
+        Effect = "Allow"
+        Action = ["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream"]
+        Resource = [
+          "arn:aws:bedrock:*::foundation-model/anthropic.*",
+          "arn:aws:bedrock:*:${data.aws_caller_identity.current.account_id}:inference-profile/*",
+        ]
+      },
     ]
   })
 }

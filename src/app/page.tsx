@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { CertBadge } from "@/components/marketing/CertBadge";
 import { type LibraryDoc } from "@/components/download/DocumentLibrary";
 import { TrustTabs } from "@/components/download/TrustTabs";
+import { AskWidget } from "@/components/marketing/AskWidget";
 import { getOrgSettings } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
@@ -156,6 +157,8 @@ export default async function HomePage() {
           </Link>
         </div>
       </footer>
+
+      <AskWidget company={settings.companyName} />
     </div>
   );
 }

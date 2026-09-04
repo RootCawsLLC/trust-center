@@ -67,6 +67,7 @@ model User {
   documents        Document[]
   documentVersions DocumentVersion[]
   savedViews       SavedView[]
+  tickets          Ticket[]
 }
 
 // A named filter/view a user saves on a list tab (e.g., "Q2 2026 requests").
@@ -474,4 +475,25 @@ model Integration {
   status    String   @default("disconnected") // connected | disconnected
   note      String?
   updatedAt DateTime @updatedAt
+}
+
+// Light ticketing: user questions the assistant can't answer, plus manual entries.
+model Ticket {
+  id                  String   @id @default(cuid())
+  subject             String
+  question            String   @db.Text
+  requesterName       String?
+  requesterEmail      String?
+  emailDomain         String?
+  matchedCustomerName String?
+  status              String   @default("open") // open | in-progress | resolved
+  source              String   @default("assistant") // assistant | manual
+  assignedToId        String?
+  assignedTo          User?    @relation(fields: [assignedToId], references: [id])
+  note                String?  @db.Text
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
 }

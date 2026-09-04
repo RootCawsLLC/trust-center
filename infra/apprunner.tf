@@ -32,6 +32,9 @@ resource "aws_apprunner_service" "app" {
           # can explore the backend without altering the sample content.
           DEMO_EMAIL    = "viewer@trustcenter.local"
           DEMO_PASSWORD = "ChangeMe!Viewer123"
+          # AI (Bedrock, IAM-based — no key). Claude Haiku 4.5 cross-region profile.
+          AI_ENABLED       = "true"
+          BEDROCK_MODEL_ID = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
           # Make Next's standalone server bind all interfaces (else it inherits
           # the container hostname and App Runner health checks can't reach it).
           HOSTNAME = "0.0.0.0"
