@@ -52,7 +52,7 @@ resource "aws_apprunner_service" "app" {
 
   network_configuration {
     egress_configuration {
-      egress_type = var.app_egress == "VPC" ? "VPC" : "DEFAULT"
+      egress_type       = var.app_egress == "VPC" ? "VPC" : "DEFAULT"
       vpc_connector_arn = var.app_egress == "VPC" ? aws_apprunner_vpc_connector.main.arn : null
     }
   }
