@@ -204,6 +204,7 @@ model DownloadRequest {
   userAgent      String?
 
   ndaRequired Boolean
+  batchId     String? // groups the per-document rows of a multi-select download
 
   classification      RequesterClass
   matchedCustomerId   String?
@@ -235,6 +236,19 @@ model NdaAcceptance {
   signerEmail String
   ipAddress   String?
   userAgent   String?
+}
+
+// Operational (mutable) grant for a multi-select ZIP download.
+model BulkDownload {
+  id             String    @id @default(cuid())
+  token          String    @unique
+  batchId        String
+  requesterEmail String
+  documentIds    String[]
+  createdAt      DateTime  @default(now())
+  expiresAt      DateTime
+  usedAt         DateTime?
+  downloadCount  Int       @default(0)
 }
 
 // Operational (mutable) download grant supporting the immutable request record.

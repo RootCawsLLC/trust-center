@@ -11,6 +11,22 @@ export const downloadRequestSchema = z.object({
 
 export type DownloadRequestInput = z.infer<typeof downloadRequestSchema>;
 
+export const bulkRequestSchema = z.object({
+  documentIds: z.array(z.string().min(1)).min(1).max(500),
+  requesterName: z.string().min(2, "Please enter your full name").max(120),
+  requesterEmail: z.string().email("Enter a valid work email").max(200),
+  orgName: z.string().min(2, "Enter your organization").max(160),
+  country: z.string().min(2, "Select your country").max(80),
+});
+
+export const bulkNdaAcceptSchema = z.object({
+  batchId: z.string().min(1),
+  signerName: z.string().min(2, "Type your full name to sign").max(120),
+  agreed: z.literal(true, {
+    errorMap: () => ({ message: "You must accept the NDA to continue" }),
+  }),
+});
+
 export const ndaAcceptSchema = z.object({
   requestId: z.string().min(1),
   signerName: z.string().min(2, "Type your full name to sign").max(120),
