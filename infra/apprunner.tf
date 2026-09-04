@@ -1,6 +1,6 @@
 resource "aws_apprunner_vpc_connector" "main" {
   vpc_connector_name = "${var.project}-connector"
-  subnets            = aws_subnet.public[*].id
+  subnets            = aws_subnet.private[*].id
   security_groups    = [aws_security_group.connector.id]
 }
 
@@ -20,7 +20,7 @@ resource "aws_apprunner_service" "app" {
 
       image_configuration {
         port = "3000"
-        runtime_environment_variables = {
+        runtime_environment_variables = merge({
           STORAGE_DRIVER  = "s3"
           S3_BUCKET       = aws_s3_bucket.docs.bucket
           AWS_REGION      = var.aws_region
@@ -30,7 +30,12 @@ resource "aws_apprunner_service" "app" {
           # Make Next's standalone server bind all interfaces (else it inherits
           # the container hostname and App Runner health checks can't reach it).
           HOSTNAME = "0.0.0.0"
-        }
+          }, var.app_url != "" ? {
+          # Canonical URL for Auth.js redirects (HOSTNAME=0.0.0.0 otherwise makes
+          # it derive the wrong base URL).
+          AUTH_URL = var.app_url
+          APP_URL  = var.app_url
+        } : {})
         runtime_environment_secrets = {
           DATABASE_URL = aws_secretsmanager_secret.database_url.arn
           AUTH_SECRET  = aws_secretsmanager_secret.auth_secret.arn
@@ -47,8 +52,8 @@ resource "aws_apprunner_service" "app" {
 
   network_configuration {
     egress_configuration {
-      egress_type       = "VPC"
-      vpc_connector_arn = aws_apprunner_vpc_connector.main.arn
+      egress_type = var.app_egress == "VPC" ? "VPC" : "DEFAULT"
+      vpc_connector_arn = var.app_egress == "VPC" ? aws_apprunner_vpc_connector.main.arn : null
     }
   }
 
@@ -61,5 +66,5 @@ resource "aws_apprunner_service" "app" {
     unhealthy_threshold = 5
   }
 
-  depends_on = [aws_db_instance.main]
+  depends_on = [aws_db_instance.main, aws_vpc_endpoint.secretsmanager]
 }

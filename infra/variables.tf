@@ -75,3 +75,15 @@ variable "app_memory" {
   type        = string
   default     = "512"
 }
+
+variable "app_egress" {
+  description = "App Runner egress mode: VPC (via connector) or PUBLIC (diagnostic)"
+  type        = string
+  default     = "VPC"
+}
+
+variable "app_url" {
+  description = "Public URL of the service (set to the App Runner URL after first create so Auth.js builds correct redirects)"
+  type        = string
+  default     = ""
+}
