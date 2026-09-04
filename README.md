@@ -3,7 +3,7 @@
 [![CI](https://github.com/RootCawsLLC/trust-center/actions/workflows/ci.yml/badge.svg)](https://github.com/RootCawsLLC/trust-center/actions/workflows/ci.yml)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
-A vendor **trust center** (in the spirit of Vanta / SafeBase): a sleek public site
+A vendor **trust center**: a sleek public site
 where prospects and customers browse your security, compliance, and audit
 documentation, and a vendor admin console to manage it all — backed by an
 immutable request ledger and Salesforce-based customer/lead classification.
