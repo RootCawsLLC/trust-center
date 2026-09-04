@@ -5,11 +5,13 @@ import { useRouter } from "next/navigation";
 import { Plus, Pencil, Trash2, X, Loader2 } from "lucide-react";
 import { saveNda, deleteNda } from "./actions";
 import { Pill } from "@/components/admin/ui";
+import { RichTextEditor } from "@/components/admin/RichTextEditor";
 
 export type AdminNda = {
   id: string;
   name: string;
   bodyMarkdown: string;
+  contentHtml: string | null;
   isDefault: boolean;
   isActive: boolean;
   documentCount: number;
@@ -144,13 +146,16 @@ function NdaForm({
             <input name="name" className="input" defaultValue={tmpl?.name} required />
           </div>
           <div>
-            <label className="label">NDA text</label>
-            <textarea
-              name="bodyMarkdown"
-              className="input min-h-64 font-mono text-xs"
-              defaultValue={tmpl?.bodyMarkdown}
-              required
+            <label className="label">NDA text (rich text)</label>
+            <RichTextEditor
+              name="contentHtml"
+              defaultValue={tmpl?.contentHtml ?? ""}
+              placeholder="Paste or write the NDA — bold, italics, and bullet points are supported."
             />
+            <p className="mt-1 text-xs text-ink-faint">
+              Formatting is preserved for signers. The accepted text is hashed into
+              each acceptance record.
+            </p>
           </div>
           <div className="flex gap-6">
             <label className="flex items-center gap-2 text-sm text-ink-soft">

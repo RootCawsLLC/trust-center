@@ -110,11 +110,15 @@ export default async function HomePage() {
             id: a.id,
             title: a.title,
             category: a.category,
+            contentHtml: a.contentHtml,
             bodyMarkdown: a.bodyMarkdown,
+            url: a.url,
+            fileName: a.fileName,
           }))}
           updates={updates.map((u) => ({
             id: u.id,
             title: u.title,
+            contentHtml: u.contentHtml,
             bodyMarkdown: u.bodyMarkdown,
             type: u.type,
             publishedAt: u.publishedAt.toISOString(),

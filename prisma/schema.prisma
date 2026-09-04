@@ -153,11 +153,15 @@ model Document {
 }
 
 model NdaTemplate {
-  id           String   @id @default(cuid())
-  name         String
-  bodyMarkdown String   @db.Text // NDA text the vendor pastes or uploads
-  isActive     Boolean  @default(true)
-  isDefault    Boolean  @default(false)
+  id             String  @id @default(cuid())
+  name           String
+  bodyMarkdown   String  @db.Text // NDA text (plain), also used for the acceptance hash
+  contentHtml    String? @db.Text // sanitized rich-text version, rendered when present
+  fileStorageKey String? // an uploaded NDA file (PDF/DOCX) shared as-is
+  fileName       String?
+  fileMimeType   String?
+  isActive       Boolean @default(true)
+  isDefault      Boolean @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -294,11 +298,15 @@ model Subprocessor {
 }
 
 model KnowledgeArticle {
-  id           String   @id @default(cuid())
-  title        String
-  category     String   @default("General")
-  bodyMarkdown String   @db.Text
-  isPublished  Boolean  @default(true)
+  id             String  @id @default(cuid())
+  title          String
+  category       String  @default("General")
+  bodyMarkdown   String  @db.Text @default("")
+  contentHtml    String? @db.Text // sanitized rich text
+  url            String? // external link, as an alternative to a body
+  fileStorageKey String? // an attached document
+  fileName       String?
+  isPublished    Boolean @default(true)
   sortOrder    Int      @default(0)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -309,7 +317,8 @@ model KnowledgeArticle {
 model TrustUpdate {
   id           String   @id @default(cuid())
   title        String
-  bodyMarkdown String   @db.Text
+  bodyMarkdown String   @db.Text @default("")
+  contentHtml  String?  @db.Text // sanitized rich text
   type         String   @default("update") // update | new | security | compliance
   publishedAt  DateTime @default(now())
   isPublished  Boolean  @default(true)

@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/admin/ui";
 import { ContentManager } from "@/components/admin/ContentManager";
 import { saveArticle, deleteArticle } from "../content-actions";
+import { KB_CATEGORIES } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +12,7 @@ export default async function KnowledgePage() {
     <div>
       <PageHeader
         title="Knowledge base"
-        description="FAQ-style articles shown on the public trust center."
+        description="FAQ-style articles shown on the public trust center. Each entry can be rich text, a link, or an attached document."
       />
       <ContentManager
         newLabel="New article"
@@ -19,7 +20,9 @@ export default async function KnowledgePage() {
           id: a.id,
           title: a.title,
           category: a.category,
-          bodyMarkdown: a.bodyMarkdown,
+          contentHtml: a.contentHtml ?? "",
+          url: a.url ?? "",
+          file: a.fileName ?? "",
           sortOrder: a.sortOrder,
           isPublished: a.isPublished,
         }))}
@@ -30,9 +33,35 @@ export default async function KnowledgePage() {
         ]}
         fields={[
           { name: "title", label: "Title", type: "text", required: true, full: true },
-          { name: "category", label: "Category", type: "text", placeholder: "General" },
+          {
+            name: "category",
+            label: "Category",
+            type: "select",
+            options: KB_CATEGORIES.map((c) => ({ value: c, label: c })),
+          },
           { name: "sortOrder", label: "Sort order", type: "number" },
-          { name: "bodyMarkdown", label: "Body", type: "textarea", required: true },
+          {
+            name: "contentHtml",
+            label: "Body (rich text)",
+            type: "richtext",
+            full: true,
+            placeholder: "Write the article… or leave blank and provide a URL or file below",
+          },
+          {
+            name: "url",
+            label: "External URL (optional)",
+            type: "text",
+            full: true,
+            placeholder: "https://…",
+            hint: "Link out instead of writing a body.",
+          },
+          {
+            name: "file",
+            label: "Attach a document (optional)",
+            type: "file",
+            full: true,
+            accept: ".pdf,.doc,.docx,.xlsx,.csv,.txt,.md",
+          },
           { name: "isPublished", label: "Published", type: "checkbox" },
         ]}
         saveAction={saveArticle}

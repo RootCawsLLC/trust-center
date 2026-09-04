@@ -14,6 +14,7 @@ export default async function NdaPage() {
     id: t.id,
     name: t.name,
     bodyMarkdown: t.bodyMarkdown,
+    contentHtml: t.contentHtml,
     isDefault: t.isDefault,
     isActive: t.isActive,
     documentCount: t._count.documents,

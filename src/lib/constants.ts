@@ -102,3 +102,14 @@ export const COUNTRIES = [
   "South Africa",
   "Other",
 ];
+
+export const KB_CATEGORIES = [
+  "General",
+  "Security",
+  "Privacy",
+  "Compliance",
+  "Infrastructure",
+  "Data handling",
+  "Product",
+  "Legal",
+] as const;

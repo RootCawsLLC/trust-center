@@ -105,7 +105,7 @@ export async function POST(req: Request) {
     return NextResponse.json({
       status: "nda",
       requestId: request.id,
-      nda: { id: nda.id, name: nda.name, bodyMarkdown: nda.bodyMarkdown },
+      nda: { id: nda.id, name: nda.name, bodyMarkdown: nda.bodyMarkdown, contentHtml: nda.contentHtml },
     });
   }
 

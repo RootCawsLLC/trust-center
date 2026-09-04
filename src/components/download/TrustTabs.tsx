@@ -16,11 +16,15 @@ export type ArticleItem = {
   id: string;
   title: string;
   category: string;
+  contentHtml: string | null;
   bodyMarkdown: string;
+  url: string | null;
+  fileName: string | null;
 };
 export type UpdateItem = {
   id: string;
   title: string;
+  contentHtml: string | null;
   bodyMarkdown: string;
   type: string;
   publishedAt: string;
@@ -133,7 +137,7 @@ function Knowledge({ items }: { items: ArticleItem[] }) {
   const [q, setQ] = useState("");
   const [open, setOpen] = useState<string | null>(null);
   const filtered = items.filter((a) =>
-    `${a.title} ${a.bodyMarkdown} ${a.category}`.toLowerCase().includes(q.trim().toLowerCase()),
+    `${a.title} ${a.category}`.toLowerCase().includes(q.trim().toLowerCase()),
   );
   if (items.length === 0) return <Empty>No articles yet.</Empty>;
   return (
@@ -167,7 +171,21 @@ function Knowledge({ items }: { items: ArticleItem[] }) {
             </button>
             {open === a.id && (
               <div className="border-t border-slate-100 px-4 py-3 text-sm leading-relaxed text-ink-soft">
-                {a.bodyMarkdown}
+                {a.contentHtml ? (
+                  <div className="tc-prose" dangerouslySetInnerHTML={{ __html: a.contentHtml }} />
+                ) : a.bodyMarkdown ? (
+                  <p className="whitespace-pre-wrap">{a.bodyMarkdown}</p>
+                ) : null}
+                {a.url && (
+                  <a href={a.url} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-1.5 font-medium text-brand-700 hover:underline">
+                    Open resource ↗
+                  </a>
+                )}
+                {a.fileName && (
+                  <a href={`/api/kb-file/${a.id}`} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-1.5 font-medium text-brand-700 hover:underline">
+                    Download {a.fileName}
+                  </a>
+                )}
               </div>
             )}
           </div>
@@ -200,7 +218,11 @@ function Updates({ items }: { items: UpdateItem[] }) {
             </span>
           </div>
           <h3 className="font-semibold text-ink">{u.title}</h3>
-          <p className="mt-1 text-sm text-ink-soft">{u.bodyMarkdown}</p>
+          {u.contentHtml ? (
+            <div className="tc-prose mt-1 text-sm text-ink-soft" dangerouslySetInnerHTML={{ __html: u.contentHtml }} />
+          ) : (
+            <p className="mt-1 whitespace-pre-wrap text-sm text-ink-soft">{u.bodyMarkdown}</p>
+          )}
         </div>
       ))}
     </div>

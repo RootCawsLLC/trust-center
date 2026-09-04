@@ -19,7 +19,7 @@ export default async function UpdatesPage() {
           id: u.id,
           title: u.title,
           type: u.type,
-          bodyMarkdown: u.bodyMarkdown,
+          contentHtml: u.contentHtml ?? "",
           publishedAt: u.publishedAt.toISOString().slice(0, 10),
           isPublished: u.isPublished,
         }))}
@@ -43,7 +43,7 @@ export default async function UpdatesPage() {
             ],
           },
           { name: "publishedAt", label: "Date", type: "date" },
-          { name: "bodyMarkdown", label: "Body", type: "textarea", required: true },
+          { name: "contentHtml", label: "Body (rich text)", type: "richtext", full: true },
           { name: "isPublished", label: "Published", type: "checkbox" },
         ]}
         saveAction={saveUpdate}

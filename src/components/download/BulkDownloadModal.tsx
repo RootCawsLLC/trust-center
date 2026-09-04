@@ -23,7 +23,7 @@ export function BulkDownloadModal({
   const [formError, setFormError] = useState<string | null>(null);
   const [form, setForm] = useState({ requesterName: "", requesterEmail: "", orgName: "", country: "" });
   const [batchId, setBatchId] = useState<string | null>(null);
-  const [nda, setNda] = useState<{ name: string; bodyMarkdown: string } | null>(null);
+  const [nda, setNda] = useState<{ name: string; bodyMarkdown: string; contentHtml?: string | null } | null>(null);
   const [signerName, setSignerName] = useState("");
   const [agreed, setAgreed] = useState(false);
   const [token, setToken] = useState<string | null>(null);
@@ -169,9 +169,16 @@ export function BulkDownloadModal({
               <h3 className="text-sm font-semibold text-ink">{nda.name}</h3>
               <p className="text-xs text-ink-faint">One NDA covers all confidential documents in this download.</p>
             </div>
-            <div className="max-h-56 overflow-y-auto whitespace-pre-wrap rounded-lg border border-slate-200 bg-slate-50 p-4 text-xs leading-relaxed text-ink-soft">
-              {nda.bodyMarkdown}
-            </div>
+            {nda.contentHtml ? (
+              <div
+                className="tc-prose max-h-56 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-4 text-xs leading-relaxed text-ink-soft"
+                dangerouslySetInnerHTML={{ __html: nda.contentHtml }}
+              />
+            ) : (
+              <div className="max-h-56 overflow-y-auto whitespace-pre-wrap rounded-lg border border-slate-200 bg-slate-50 p-4 text-xs leading-relaxed text-ink-soft">
+                {nda.bodyMarkdown}
+              </div>
+            )}
             <Field label="Type your full name to sign" error={errors.signerName}>
               <input className="input" value={signerName} onChange={(e) => setSignerName(e.target.value)} placeholder="Jordan Rivera" />
             </Field>

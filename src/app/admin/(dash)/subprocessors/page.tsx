@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/admin/ui";
 import { ContentManager } from "@/components/admin/ContentManager";
 import { saveSubprocessor, deleteSubprocessor } from "../content-actions";
+import { SubprocessorImport } from "./SubprocessorImport";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +12,8 @@ export default async function SubprocessorsPage() {
     <div>
       <PageHeader
         title="Subprocessors"
-        description="Third-party providers listed on the public trust center."
+        description="Third-party providers listed on the public trust center. Add one at a time, or import many from a spreadsheet or document."
+        action={<SubprocessorImport />}
       />
       <ContentManager
         newLabel="New subprocessor"

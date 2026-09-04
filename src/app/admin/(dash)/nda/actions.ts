@@ -3,19 +3,29 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireWrite } from "@/lib/session";
-import { ndaTemplateSchema } from "@/lib/validation";
 import { logAudit } from "@/lib/audit";
 import { AuthzError } from "@/lib/rbac";
+import { sanitizeRichText, htmlToText } from "@/lib/sanitize";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 
 function parse(fd: FormData) {
-  return ndaTemplateSchema.safeParse({
-    name: String(fd.get("name") ?? ""),
-    bodyMarkdown: String(fd.get("bodyMarkdown") ?? ""),
-    isDefault: fd.get("isDefault") === "on" || fd.get("isDefault") === "true",
-    isActive: fd.get("isActive") === "on" || fd.get("isActive") === "true",
-  });
+  const contentHtml = sanitizeRichText(String(fd.get("contentHtml") ?? ""));
+  const bodyMarkdown = htmlToText(contentHtml); // canonical plain text (hashed on acceptance)
+  const name = String(fd.get("name") ?? "").trim();
+  if (!name) return { success: false as const, error: "Name is required." };
+  if (bodyMarkdown.length < 20)
+    return { success: false as const, error: "NDA text is required (20+ characters)." };
+  return {
+    success: true as const,
+    data: {
+      name,
+      contentHtml,
+      bodyMarkdown,
+      isDefault: fd.get("isDefault") === "on" || fd.get("isDefault") === "true",
+      isActive: fd.get("isActive") === "on" || fd.get("isActive") === "true",
+    },
+  };
 }
 
 async function guard() {
@@ -35,8 +45,7 @@ export async function saveNda(id: string | null, fd: FormData): Promise<ActionRe
   }
   const parsed = parse(fd);
   if (!parsed.success) {
-    const first = Object.values(parsed.error.flatten().fieldErrors)[0]?.[0];
-    return { ok: false, error: first ?? "Invalid input" };
+    return { ok: false, error: parsed.error ?? "Invalid input" };
   }
   const data = parsed.data;
 
@@ -54,6 +63,7 @@ export async function saveNda(id: string | null, fd: FormData): Promise<ActionRe
       data: {
         name: data.name,
         bodyMarkdown: data.bodyMarkdown,
+        contentHtml: data.contentHtml,
         isDefault: Boolean(data.isDefault),
         isActive: data.isActive ?? true,
       },
@@ -63,6 +73,7 @@ export async function saveNda(id: string | null, fd: FormData): Promise<ActionRe
       data: {
         name: data.name,
         bodyMarkdown: data.bodyMarkdown,
+        contentHtml: data.contentHtml,
         isDefault: Boolean(data.isDefault),
         isActive: data.isActive ?? true,
       },

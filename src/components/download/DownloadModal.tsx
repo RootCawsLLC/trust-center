@@ -35,7 +35,7 @@ export function DownloadModal({
     country: "",
   });
   const [requestId, setRequestId] = useState<string | null>(null);
-  const [nda, setNda] = useState<{ name: string; bodyMarkdown: string } | null>(null);
+  const [nda, setNda] = useState<{ name: string; bodyMarkdown: string; contentHtml?: string | null } | null>(null);
   const [signerName, setSignerName] = useState("");
   const [agreed, setAgreed] = useState(false);
   const [downloadToken, setDownloadToken] = useState<string | null>(null);
@@ -239,9 +239,16 @@ export function DownloadModal({
                 Review and accept to access this confidential document.
               </p>
             </div>
-            <div className="max-h-56 overflow-y-auto whitespace-pre-wrap rounded-lg border border-slate-200 bg-slate-50 p-4 text-xs leading-relaxed text-ink-soft">
-              {nda.bodyMarkdown}
-            </div>
+            {nda.contentHtml ? (
+              <div
+                className="tc-prose max-h-56 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-4 text-xs leading-relaxed text-ink-soft"
+                dangerouslySetInnerHTML={{ __html: nda.contentHtml }}
+              />
+            ) : (
+              <div className="max-h-56 overflow-y-auto whitespace-pre-wrap rounded-lg border border-slate-200 bg-slate-50 p-4 text-xs leading-relaxed text-ink-soft">
+                {nda.bodyMarkdown}
+              </div>
+            )}
             <Field label="Type your full name to sign" error={errors.signerName}>
               <input
                 className="input"

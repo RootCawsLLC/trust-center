@@ -98,7 +98,7 @@ export async function POST(req: Request) {
       status: "nda",
       batchId,
       count: docs.length,
-      nda: { id: nda.id, name: nda.name, bodyMarkdown: nda.bodyMarkdown },
+      nda: { id: nda.id, name: nda.name, bodyMarkdown: nda.bodyMarkdown, contentHtml: nda.contentHtml },
     });
   }
 

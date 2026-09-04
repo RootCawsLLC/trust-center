@@ -4,15 +4,18 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Pencil, Trash2, X, Loader2 } from "lucide-react";
 import { Pill } from "@/components/admin/ui";
+import { RichTextEditor } from "@/components/admin/RichTextEditor";
 
 export type FieldDef = {
   name: string;
   label: string;
-  type: "text" | "textarea" | "select" | "checkbox" | "number" | "date";
+  type: "text" | "textarea" | "select" | "checkbox" | "number" | "date" | "richtext" | "file";
   options?: { value: string; label: string }[];
   required?: boolean;
   placeholder?: string;
   full?: boolean;
+  accept?: string;
+  hint?: string;
 };
 
 export type ColumnDef = { key: string; label: string; type?: "text" | "link" | "bool" };
@@ -194,6 +197,15 @@ function ContentForm({
                     <label className="label">{f.label}</label>
                     {f.type === "textarea" ? (
                       <textarea name={f.name} className="input min-h-28" defaultValue={val ? String(val) : ""} placeholder={f.placeholder} required={f.required} />
+                    ) : f.type === "richtext" ? (
+                      <RichTextEditor name={f.name} defaultValue={val ? String(val) : ""} placeholder={f.placeholder} />
+                    ) : f.type === "file" ? (
+                      <>
+                        <input type="file" name={f.name} accept={f.accept} className="input py-1.5" />
+                        {val ? (
+                          <p className="mt-1 text-xs text-ink-faint">Current: {String(val)} — upload to replace</p>
+                        ) : null}
+                      </>
                     ) : f.type === "select" ? (
                       <select name={f.name} className="input" defaultValue={val ? String(val) : f.options?.[0]?.value}>
                         {f.options?.map((o) => (
@@ -210,12 +222,14 @@ function ContentForm({
                         required={f.required}
                       />
                     )}
+                    {f.hint && <p className="mt-1 text-xs text-ink-faint">{f.hint}</p>}
                   </>
                 )}
               </div>
             );
           })}
         </div>
+        {item && <input type="hidden" name="hasExistingFile" value="1" />}
         {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
         <div className="mt-5 flex justify-end gap-2">
           <button type="button" onClick={onClose} className="btn-secondary">Cancel</button>

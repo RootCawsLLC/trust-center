@@ -1,12 +1,33 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { nanoid } from "nanoid";
 import { prisma } from "@/lib/prisma";
 import { requireWrite } from "@/lib/session";
 import { logAudit } from "@/lib/audit";
 import { AuthzError } from "@/lib/rbac";
+import { sanitizeRichText } from "@/lib/sanitize";
+import { putObject } from "@/lib/storage";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
+
+const MAX_UPLOAD = 25 * 1024 * 1024; // 25 MB
+
+// Store an uploaded file from a form field, returning its storage key + name.
+async function storeFile(
+  fd: FormData,
+  field: string,
+  prefix: string,
+): Promise<{ key: string; name: string; mime: string } | null> {
+  const f = fd.get(field);
+  if (!(f instanceof File) || f.size === 0) return null;
+  if (f.size > MAX_UPLOAD) throw new Error("File exceeds 25 MB.");
+  const buf = Buffer.from(await f.arrayBuffer());
+  const safeName = f.name.replace(/[^\w.\- ]+/g, "_").slice(0, 200);
+  const key = `${prefix}/${nanoid(16)}-${safeName}`;
+  await putObject(key, buf, f.type || "application/octet-stream");
+  return { key, name: safeName, mime: f.type || "application/octet-stream" };
+}
 
 async function guard() {
   try {
@@ -60,19 +81,156 @@ export async function deleteSubprocessor(id: string): Promise<ActionResult> {
   return { ok: true };
 }
 
+// ---- Subprocessor import (.xlsx / .csv / .docx) ----
+export type ParsedSub = { name: string; purpose: string; location: string; website: string };
+
+function parseCsv(text: string): string[][] {
+  return text
+    .split(/\r?\n/)
+    .filter((l) => l.trim().length > 0)
+    .map((line) => {
+      const out: string[] = [];
+      let cur = "";
+      let inQ = false;
+      for (let i = 0; i < line.length; i++) {
+        const c = line[i];
+        if (c === '"') {
+          if (inQ && line[i + 1] === '"') { cur += '"'; i++; }
+          else inQ = !inQ;
+        } else if (c === "," && !inQ) { out.push(cur.trim()); cur = ""; }
+        else cur += c;
+      }
+      out.push(cur.trim());
+      return out;
+    });
+}
+
+function rowsToSubs(rows: string[][]): ParsedSub[] {
+  if (rows.length === 0) return [];
+  const header = rows[0].map((h) => h.toLowerCase());
+  const looksLikeHeader = header.some((h) => /name|purpose|location|vendor|website|url/.test(h));
+  let idx = { name: 0, purpose: 1, location: 2, website: 3 };
+  let body = rows;
+  if (looksLikeHeader) {
+    const find = (re: RegExp, d: number) => {
+      const i = header.findIndex((h) => re.test(h));
+      return i === -1 ? d : i;
+    };
+    idx = {
+      name: find(/name|vendor|subprocessor/, 0),
+      purpose: find(/purpose|service|use/, 1),
+      location: find(/location|region|country/, 2),
+      website: find(/website|url|site|domain/, 3),
+    };
+    body = rows.slice(1);
+  }
+  return body
+    .map((r) => ({
+      name: (r[idx.name] ?? "").slice(0, 200),
+      purpose: (r[idx.purpose] ?? "").slice(0, 400),
+      location: (r[idx.location] ?? "").slice(0, 200),
+      website: (r[idx.website] ?? "").slice(0, 300),
+    }))
+    .filter((s) => s.name.length > 0);
+}
+
+export async function parseSubprocessorFile(
+  fd: FormData,
+): Promise<{ ok: true; rows: ParsedSub[]; note: string } | { ok: false; error: string }> {
+  const g = await guard();
+  if (g instanceof Error) return { ok: false, error: g.message };
+  const f = fd.get("file");
+  if (!(f instanceof File) || f.size === 0) return { ok: false, error: "Choose a file to import." };
+  if (f.size > MAX_UPLOAD) return { ok: false, error: "File exceeds 25 MB." };
+  const buf = Buffer.from(await f.arrayBuffer());
+  const ext = f.name.toLowerCase().split(".").pop();
+  try {
+    let rows: string[][] = [];
+    if (ext === "xlsx" || ext === "xls") {
+      const ExcelJS = (await import("exceljs")).default;
+      const wb = new ExcelJS.Workbook();
+      await wb.xlsx.load(buf as unknown as ArrayBuffer);
+      const ws = wb.worksheets[0];
+      ws?.eachRow((row) => {
+        const vals = (row.values as unknown[]).slice(1).map((v) => (v == null ? "" : String(v).trim()));
+        rows.push(vals);
+      });
+    } else if (ext === "csv") {
+      rows = parseCsv(buf.toString("utf8"));
+    } else if (ext === "docx") {
+      const mammoth = await import("mammoth");
+      const { value } = await mammoth.extractRawText({ buffer: buf });
+      rows = value
+        .split(/\r?\n/)
+        .map((l) => l.trim())
+        .filter(Boolean)
+        .map((l) => l.split(/\t|\s{2,}|\s*\|\s*/).map((s) => s.trim()));
+    } else {
+      return { ok: false, error: "Unsupported file. Use .xlsx, .csv, or .docx." };
+    }
+    const parsed = rowsToSubs(rows);
+    if (parsed.length === 0)
+      return { ok: false, error: "No rows found. Expected columns: Name, Purpose, Location, Website." };
+    return { ok: true, rows: parsed, note: `${parsed.length} row(s) parsed — review and import.` };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Could not parse the file." };
+  }
+}
+
+export async function importSubprocessors(rows: ParsedSub[]): Promise<ActionResult> {
+  const g = await guard();
+  if (g instanceof Error) return { ok: false, error: g.message };
+  const clean = rows.filter((r) => r.name.trim()).slice(0, 500);
+  if (clean.length === 0) return { ok: false, error: "Nothing to import." };
+  const base = await prisma.subprocessor.count();
+  await prisma.subprocessor.createMany({
+    data: clean.map((r, i) => ({
+      name: r.name.trim(),
+      purpose: r.purpose.trim() || "—",
+      location: r.location.trim() || "—",
+      website: r.website.trim() || null,
+      sortOrder: base + i,
+    })),
+  });
+  await logAudit({
+    action: "SUBPROCESSOR_IMPORT",
+    actorUserId: g.user.id,
+    actorEmail: g.user.email,
+    targetType: "Subprocessor",
+    metadata: { count: clean.length },
+  });
+  revalidatePath("/admin/subprocessors");
+  revalidatePath("/");
+  return { ok: true };
+}
+
 // ---- Knowledge base ----
 export async function saveArticle(id: string | null, fd: FormData): Promise<ActionResult> {
   const g = await guard();
   if (g instanceof Error) return { ok: false, error: g.message };
   const title = s(fd, "title");
-  const bodyMarkdown = s(fd, "bodyMarkdown");
-  if (!title || bodyMarkdown.length < 10) return { ok: false, error: "Title and a body (10+ chars) are required." };
+  if (!title) return { ok: false, error: "Title is required." };
+  const contentHtml = sanitizeRichText(s(fd, "contentHtml"));
+  const url = s(fd, "url") || null;
+  let file: Awaited<ReturnType<typeof storeFile>> = null;
+  try {
+    file = await storeFile(fd, "file", "kb");
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Upload failed." };
+  }
+  const hasBody = contentHtml.replace(/<[^>]*>/g, "").trim().length > 0;
+  if (!hasBody && !url && !file && !(id && s(fd, "hasExistingFile") === "1")) {
+    return { ok: false, error: "Provide a body, a URL, or an uploaded file." };
+  }
   const data = {
     title,
     category: s(fd, "category") || "General",
-    bodyMarkdown,
+    bodyMarkdown: s(fd, "bodyMarkdown"),
+    contentHtml: contentHtml || null,
+    url,
     sortOrder: num(fd, "sortOrder"),
     isPublished: fd.has("isPublished") ? bool(fd, "isPublished") : true,
+    ...(file ? { fileStorageKey: file.key, fileName: file.name } : {}),
   };
   if (id) await prisma.knowledgeArticle.update({ where: { id }, data });
   else await prisma.knowledgeArticle.create({ data });
@@ -96,12 +254,14 @@ export async function saveUpdate(id: string | null, fd: FormData): Promise<Actio
   const g = await guard();
   if (g instanceof Error) return { ok: false, error: g.message };
   const title = s(fd, "title");
-  const bodyMarkdown = s(fd, "bodyMarkdown");
-  if (!title || bodyMarkdown.length < 5) return { ok: false, error: "Title and body are required." };
+  const contentHtml = sanitizeRichText(s(fd, "contentHtml"));
+  const hasBody = contentHtml.replace(/<[^>]*>/g, "").trim().length > 0;
+  if (!title || !hasBody) return { ok: false, error: "Title and body are required." };
   const dateStr = s(fd, "publishedAt");
   const data = {
     title,
-    bodyMarkdown,
+    bodyMarkdown: s(fd, "bodyMarkdown"),
+    contentHtml: contentHtml || null,
     type: s(fd, "type") || "update",
     isPublished: fd.has("isPublished") ? bool(fd, "isPublished") : true,
     ...(dateStr ? { publishedAt: new Date(dateStr) } : {}),
