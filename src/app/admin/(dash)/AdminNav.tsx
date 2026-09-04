@@ -22,6 +22,8 @@ import {
   Gauge,
   SplitSquareHorizontal,
   CalendarDays,
+  UsersRound,
+  Plug,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -40,6 +42,8 @@ const NAV = [
   { href: "/admin/knowledge", label: "Knowledge base", icon: BookOpen },
   { href: "/admin/updates", label: "Updates", icon: Megaphone },
   { href: "/admin/users", label: "Users", icon: Users, ownerOnly: true },
+  { href: "/admin/groups", label: "Groups", icon: UsersRound, ownerOnly: true },
+  { href: "/admin/integrations", label: "Integrations", icon: Plug },
   { href: "/admin/audit", label: "Audit log", icon: ScrollText },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];

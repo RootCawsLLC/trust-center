@@ -56,6 +56,39 @@ See [SECURITY.md](SECURITY.md) for the full posture and UAT hardening checklist.
 
 ---
 
+## Requirements & options
+
+### Minimum to run it fully yourself
+
+| Need | Minimum | Notes |
+|---|---|---|
+| **Runtime** | Node ≥ 22 | The app is a single Next.js server. |
+| **Database** | PostgreSQL 14+ | Any Postgres. Locally, `embedded-postgres` runs one for you — **no Docker or separate install needed**. |
+| **Auth secret** | `AUTH_SECRET` (32 random bytes) | `npm run setup:local` generates one. |
+| **Document storage** | Local disk **or** an S3 bucket | `STORAGE_DRIVER=local` needs nothing; `s3` needs a bucket + AWS creds. |
+
+That's the whole hard requirement list — Node + Postgres + a secret. Everything
+below is **optional** and degrades gracefully when unset.
+
+### Options for going further
+
+| Capability | What to provide | If you skip it |
+|---|---|---|
+| **AWS deploy** | An AWS account + Terraform (`infra/`) | Run locally, or deploy to any container host — the app is a standard Docker image. |
+| **SSO (Okta / Google)** | Provider env vars (`OKTA_ISSUER`/`OKTA_CLIENT_ID`/`OKTA_CLIENT_SECRET`, `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`) | Email + password sign-in for provisioned users. |
+| **AI (Q&A + doc auto-fill)** | Amazon **Bedrock** access (IAM `bedrock:InvokeModel`; Claude auto-enables on first invoke) | AI features stay off; everything else works. |
+| **Welcome emails** | Amazon SES (a verified sender) | Account creation still works; the email is previewed, not sent. |
+| **Salesforce** | Swap the seeded `MockSalesforceCustomer` table for a real SOQL query | The mock customer directory drives customer/lead classification. |
+
+### Just want to click around?
+
+The hosted demo is fully explorable with no setup: browse the public trust
+center, run the gated + NDA download flows, and sign into the vendor admin as a
+read-only viewer. To test **editing** end-to-end, clone the repo and run it
+locally (below) — you get full Owner access against your own database.
+
+---
+
 ## Local development
 
 Prerequisites: Node ≥ 22. No Docker required — a real Postgres 17 runs locally via

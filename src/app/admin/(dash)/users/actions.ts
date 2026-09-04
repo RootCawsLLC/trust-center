@@ -46,11 +46,13 @@ export async function createUser(fd: FormData): Promise<ActionResult> {
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) return { ok: false, error: "A user with that email already exists" };
 
+  const groupId = String(fd.get("groupId") ?? "") || null;
   const user = await prisma.user.create({
     data: {
       email,
       name: data.name,
       role: data.role as Role,
+      groupId,
       passwordHash: await bcrypt.hash(data.password, 12),
       isActive: true,
     },
@@ -62,7 +64,17 @@ export async function createUser(fd: FormData): Promise<ActionResult> {
     actorEmail: session.user.email,
     targetType: "User",
     targetId: user.id,
-    metadata: { email, role: data.role },
+    metadata: { email, role: data.role, groupId },
+  });
+
+  // Welcome email — scaffolded: recorded here; a real deploy sends it via SES.
+  await logAudit({
+    action: "WELCOME_EMAIL_QUEUED",
+    actorUserId: session.user.id,
+    actorEmail: session.user.email,
+    targetType: "User",
+    targetId: user.id,
+    metadata: { to: email, note: "Scaffold — no email sent (wire SES for UAT)" },
   });
 
   revalidatePath("/admin/users");
@@ -105,6 +117,7 @@ export async function updateUser(id: string, fd: FormData): Promise<ActionResult
       name,
       role,
       isActive,
+      groupId: String(fd.get("groupId") ?? "") || null,
       ...(password
         ? { passwordHash: await bcrypt.hash(password, 12) }
         : {}),

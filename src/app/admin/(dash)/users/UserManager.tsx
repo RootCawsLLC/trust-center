@@ -12,12 +12,15 @@ export type AdminUser = {
   email: string;
   name: string | null;
   role: "OWNER" | "ADMIN" | "VIEWER";
+  groupId: string | null;
   isActive: boolean;
   hasPassword: boolean;
   createdAt: string;
 };
 
-export function UserManager({ users }: { users: AdminUser[] }) {
+export type GroupOption = { id: string; name: string; defaultRole: string };
+
+export function UserManager({ users, groups = [] }: { users: AdminUser[]; groups?: GroupOption[] }) {
   const [editing, setEditing] = useState<AdminUser | null>(null);
   const [creating, setCreating] = useState(false);
   const router = useRouter();
@@ -79,6 +82,7 @@ export function UserManager({ users }: { users: AdminUser[] }) {
       {(creating || editing) && (
         <UserForm
           user={editing}
+          groups={groups}
           onClose={() => {
             setCreating(false);
             setEditing(null);
@@ -96,10 +100,12 @@ export function UserManager({ users }: { users: AdminUser[] }) {
 
 function UserForm({
   user,
+  groups,
   onClose,
   onSaved,
 }: {
   user: AdminUser | null;
+  groups: GroupOption[];
   onClose: () => void;
   onSaved: () => void;
 }) {
@@ -158,6 +164,32 @@ function UserForm({
               <option value="ADMIN">Admin (manage content)</option>
               <option value="OWNER">Owner (full control)</option>
             </select>
+          </div>
+          <div>
+            <label className="label">Group</label>
+            <select
+              name="groupId"
+              className="input"
+              defaultValue={user?.groupId ?? ""}
+              onChange={(e) => {
+                const g = groups.find((x) => x.id === e.target.value);
+                const form = e.target.form;
+                if (g && form) {
+                  const roleEl = form.elements.namedItem("role") as HTMLSelectElement | null;
+                  if (roleEl) roleEl.value = g.defaultRole;
+                }
+              }}
+            >
+              <option value="">No group</option>
+              {groups.map((g) => (
+                <option key={g.id} value={g.id}>
+                  {g.name} (inherits {g.defaultRole.toLowerCase()})
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-ink-faint">
+              Picking a group sets the role to its default — you can still override it above.
+            </p>
           </div>
           <div>
             <label className="label">

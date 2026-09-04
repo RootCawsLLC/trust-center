@@ -55,6 +55,8 @@ model User {
   emailVerified DateTime?
   image         String?
   role          Role      @default(VIEWER)
+  groupId       String?
+  group         Group?    @relation(fields: [groupId], references: [id])
   passwordHash  String? // set for local/credentials admins; null for pure-SSO users
   isActive      Boolean   @default(true)
   createdAt     DateTime  @default(now())
@@ -449,4 +451,27 @@ model RequestArchive {
   archivedByEmail   String?
   reason            String?
   archivedAt        DateTime @default(now())
+}
+
+// User groups (Legal, Sales, InfoSec…) with a default role members inherit.
+model Group {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  defaultRole Role     @default(VIEWER)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users User[]
+}
+
+// Integration placeholders (Salesforce, Google Drive, Okta, Google SSO, SES…).
+model Integration {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  name      String
+  category  String
+  status    String   @default("disconnected") // connected | disconnected
+  note      String?
+  updatedAt DateTime @updatedAt
 }
