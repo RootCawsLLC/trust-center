@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Pencil, Trash2, X, Lock, Globe, Loader2, Upload, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Lock, Globe, Loader2, Upload, ChevronUp, ChevronDown, ChevronsUpDown, Eye } from "lucide-react";
 import { createDocument, updateDocument, deleteDocument } from "./actions";
 import { bytesToSize } from "@/lib/utils";
 import { CATEGORY_SINGULAR, INDUSTRIES, REGIONS, FRAMEWORKS } from "@/lib/constants";
@@ -136,7 +136,15 @@ export function DocumentManager({
               {sortedDocs.map((d) => (
                 <tr key={d.id}>
                   <td className="px-4 py-3">
-                    <div className="font-medium text-ink">{d.title}</div>
+                    <a
+                      href={`/api/admin/doc-file/${d.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-medium text-brand-700 hover:underline"
+                      title="View the stored document"
+                    >
+                      {d.title}
+                    </a>
                     <div className="text-xs text-ink-faint">
                       {d.fileName} · {bytesToSize(d.sizeBytes)} · v{d.version}
                     </div>
@@ -352,6 +360,16 @@ function DocumentForm({
             <label className="label">
               File {doc && <span className="text-ink-faint">(leave empty to keep current)</span>}
             </label>
+            {doc && (
+              <a
+                href={`/api/admin/doc-file/${doc.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mb-2 inline-flex items-center gap-1.5 text-sm font-medium text-brand-700 hover:underline"
+              >
+                <Eye size={14} /> View current file ({doc.fileName})
+              </a>
+            )}
             <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-slate-300 px-3 py-3 text-sm text-ink-soft hover:border-brand-400">
               <Upload size={16} />
               <span>{doc ? doc.fileName : "Choose a file (PDF, etc.)"}</span>
