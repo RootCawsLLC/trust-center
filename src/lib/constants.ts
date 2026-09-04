@@ -7,6 +7,7 @@ export const CATEGORY_LABELS: Record<DocumentCategory, string> = {
   CERTIFICATION: "Certifications",
   REPORT: "Reports",
   WHITEPAPER: "Whitepapers",
+  LEGAL: "Legal",
   OTHER: "Other",
 };
 
@@ -16,6 +17,7 @@ export const CATEGORY_ORDER: DocumentCategory[] = [
   "REPORT",
   "POLICY",
   "PROCEDURE",
+  "LEGAL",
   "WHITEPAPER",
   "OTHER",
 ];
@@ -27,8 +29,46 @@ export const CATEGORY_SINGULAR: Record<DocumentCategory, string> = {
   CERTIFICATION: "Certification",
   REPORT: "Report",
   WHITEPAPER: "Whitepaper",
+  LEGAL: "Legal",
   OTHER: "Document",
 };
+
+// Taxonomy vocabularies — power the admin tagging and the customer-facing
+// "filter by industry / region / framework" facets.
+export const INDUSTRIES = [
+  "Healthcare",
+  "Financial Services",
+  "Public Sector",
+  "Technology",
+  "Retail & E-commerce",
+  "Education",
+  "Manufacturing",
+  "Energy & Utilities",
+];
+
+export const REGIONS = [
+  "North America",
+  "European Union",
+  "United Kingdom",
+  "APAC",
+  "LATAM",
+  "Middle East & Africa",
+  "Global",
+];
+
+export const FRAMEWORKS = [
+  "SOC 2",
+  "ISO 27001",
+  "ISO 27701",
+  "HIPAA",
+  "HITRUST",
+  "PCI DSS",
+  "GDPR",
+  "CCPA",
+  "NIST CSF",
+  "FedRAMP",
+  "EU AI Act",
+];
 
 // A pragmatic country list for the gated form. "Other" is always allowed.
 export const COUNTRIES = [

@@ -30,6 +30,7 @@ enum DocumentCategory {
   CERTIFICATION
   REPORT
   WHITEPAPER
+  LEGAL
   OTHER
 }
 
@@ -115,6 +116,11 @@ model Document {
   sizeBytes   Int
   version     String             @default("1.0")
   isPublished Boolean            @default(false)
+
+  // Taxonomy for the customer-facing filters (industry / region / framework).
+  industries String[] @default([])
+  regions    String[] @default([])
+  frameworks String[] @default([])
 
   ndaTemplateId String? // optional per-document NDA override; else the default template
   ndaTemplate   NdaTemplate? @relation(fields: [ndaTemplateId], references: [id])

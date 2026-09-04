@@ -13,6 +13,16 @@ export type ActionResult = { ok: true } | { ok: false; error: string };
 
 const MAX_BYTES = 40 * 1024 * 1024; // 40 MB
 
+function tagsFromForm(fd: FormData) {
+  const clean = (vals: FormDataEntryValue[]) =>
+    [...new Set(vals.map(String).filter(Boolean))];
+  return {
+    industries: clean(fd.getAll("industries")),
+    regions: clean(fd.getAll("regions")),
+    frameworks: clean(fd.getAll("frameworks")),
+  };
+}
+
 function fieldsFromForm(fd: FormData) {
   return {
     title: String(fd.get("title") ?? ""),
@@ -61,6 +71,7 @@ export async function createDocument(fd: FormData): Promise<ActionResult> {
       visibility: data.visibility,
       version: data.version || "1.0",
       isPublished: Boolean(data.isPublished),
+      ...tagsFromForm(fd),
       ndaTemplateId:
         data.visibility === "PRIVATE" && data.ndaTemplateId
           ? data.ndaTemplateId
@@ -135,6 +146,7 @@ export async function updateDocument(
       visibility: data.visibility,
       version: data.version || existing.version,
       isPublished: Boolean(data.isPublished),
+      ...tagsFromForm(fd),
       ndaTemplateId:
         data.visibility === "PRIVATE" && data.ndaTemplateId
           ? data.ndaTemplateId

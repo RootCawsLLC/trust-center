@@ -55,6 +55,9 @@ export default async function DocumentsPage({ searchParams }: { searchParams: SP
     sizeBytes: d.sizeBytes,
     ndaTemplateId: d.ndaTemplateId,
     requestCount: d._count.requests,
+    industries: d.industries,
+    regions: d.regions,
+    frameworks: d.frameworks,
   }));
 
   return (

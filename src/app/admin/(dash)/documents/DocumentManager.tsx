@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Plus, Pencil, Trash2, X, Lock, Globe, Loader2, Upload } from "lucide-react";
 import { createDocument, updateDocument, deleteDocument } from "./actions";
 import { bytesToSize } from "@/lib/utils";
-import { CATEGORY_SINGULAR } from "@/lib/constants";
+import { CATEGORY_SINGULAR, INDUSTRIES, REGIONS, FRAMEWORKS } from "@/lib/constants";
 import { Pill } from "@/components/admin/ui";
 import type { DocumentCategory } from "@prisma/client";
 
@@ -21,6 +21,9 @@ export type AdminDoc = {
   sizeBytes: number;
   ndaTemplateId: string | null;
   requestCount: number;
+  industries: string[];
+  regions: string[];
+  frameworks: string[];
 };
 
 const CATEGORIES: DocumentCategory[] = [
@@ -30,6 +33,7 @@ const CATEGORIES: DocumentCategory[] = [
   "CERTIFICATION",
   "REPORT",
   "WHITEPAPER",
+  "LEGAL",
   "OTHER",
 ];
 
@@ -163,6 +167,41 @@ export function DocumentManager({
   );
 }
 
+function TagChecks({
+  name,
+  label,
+  options,
+  selected,
+}: {
+  name: string;
+  label: string;
+  options: string[];
+  selected: string[];
+}) {
+  const set = new Set(selected);
+  return (
+    <div>
+      <label className="label">{label}</label>
+      <div className="flex flex-wrap gap-1.5">
+        {options.map((o) => (
+          <label key={o} className="cursor-pointer">
+            <input
+              type="checkbox"
+              name={name}
+              value={o}
+              defaultChecked={set.has(o)}
+              className="peer sr-only"
+            />
+            <span className="inline-block rounded-full border border-slate-300 px-2.5 py-1 text-xs text-ink-soft transition peer-checked:border-brand-500 peer-checked:bg-brand-50 peer-checked:text-brand-700 peer-hover:border-brand-300">
+              {o}
+            </span>
+          </label>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function DocumentForm({
   doc,
   ndaTemplates,
@@ -268,6 +307,10 @@ function DocumentForm({
               </div>
             )}
           </div>
+          <TagChecks name="frameworks" label="Frameworks" options={FRAMEWORKS} selected={doc?.frameworks ?? []} />
+          <TagChecks name="industries" label="Industries" options={INDUSTRIES} selected={doc?.industries ?? []} />
+          <TagChecks name="regions" label="Regions" options={REGIONS} selected={doc?.regions ?? []} />
+
           <div>
             <label className="label">
               File {doc && <span className="text-ink-faint">(leave empty to keep current)</span>}

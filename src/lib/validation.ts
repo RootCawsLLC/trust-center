@@ -29,6 +29,7 @@ export const documentSchema = z.object({
     "CERTIFICATION",
     "REPORT",
     "WHITEPAPER",
+    "LEGAL",
     "OTHER",
   ]),
   visibility: z.enum(["PUBLIC", "PRIVATE"]),

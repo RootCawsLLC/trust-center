@@ -1,11 +1,17 @@
 import Link from "next/link";
-import { ShieldCheck, Lock, FileCheck, Server, ArrowRight } from "lucide-react";
+import { ShieldCheck, BadgeCheck, ArrowRight, Lock } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { DocumentLibrary, type LibraryDoc } from "@/components/download/DocumentLibrary";
 
 export const dynamic = "force-dynamic";
 
 const COMPANY = process.env.COMPANY_NAME ?? "Acme Corp";
+const TAGLINE = "Security, privacy, and compliance — transparent by default.";
+const OVERVIEW = `${COMPANY} builds enterprise software with security and privacy at its core. This Trust Center is where customers and prospects review our certifications, audit reports, policies, and legal documents. Public materials are available instantly; confidential materials are shared under NDA.`;
+
+function uniqueSorted(v: string[]) {
+  return [...new Set(v)].sort((a, b) => a.localeCompare(b));
+}
 
 export default async function HomePage() {
   const docs = await prisma.document.findMany({
@@ -23,16 +29,23 @@ export default async function HomePage() {
     sizeBytes: d.sizeBytes,
     version: d.version,
     updatedAt: d.updatedAt.toISOString(),
+    industries: d.industries,
+    regions: d.regions,
+    frameworks: d.frameworks,
   }));
 
   const publicCount = docs.filter((d) => d.visibility === "PUBLIC").length;
-  const privateCount = docs.length - publicCount;
+  const badges = uniqueSorted(
+    docs
+      .filter((d) => d.category === "CERTIFICATION" || d.category === "AUDIT")
+      .flatMap((d) => d.frameworks),
+  );
 
   return (
     <div className="min-h-screen">
       {/* Header */}
-      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/80 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur">
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3.5">
           <div className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white">
               <ShieldCheck size={18} />
@@ -45,49 +58,52 @@ export default async function HomePage() {
         </div>
       </header>
 
-      {/* Hero */}
-      <section className="bg-grid border-b border-slate-200 bg-white">
-        <div className="mx-auto max-w-6xl px-6 py-16 sm:py-20">
-          <div className="max-w-2xl">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-3 py-1 text-xs font-medium text-brand-700 ring-1 ring-inset ring-brand-200">
-              <ShieldCheck size={13} /> Security &amp; Compliance
-            </span>
-            <h1 className="mt-4 text-4xl font-bold tracking-tight text-ink sm:text-5xl">
-              Trust, documented.
-            </h1>
-            <p className="mt-4 text-lg text-ink-soft">
-              Review {COMPANY}&apos;s security posture, compliance certifications,
-              audit reports, and policies. Public documents are available
-              instantly; confidential materials are shared under NDA.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-6 text-sm">
-              <Stat value={docs.length} label="Documents" />
-              <Stat value={publicCount} label="Public" />
-              <Stat value={privateCount} label="Under NDA" />
+      {/* Overview */}
+      <section className="border-b border-slate-200 bg-white">
+        <div className="mx-auto max-w-5xl px-6 py-12">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-3 py-1 text-xs font-medium text-brand-700 ring-1 ring-inset ring-brand-200">
+            <ShieldCheck size={13} /> Trust Center
+          </span>
+          <h1 className="mt-4 max-w-2xl text-3xl font-bold tracking-tight text-ink sm:text-4xl">
+            {TAGLINE}
+          </h1>
+          <p className="mt-3 max-w-2xl text-ink-soft">{OVERVIEW}</p>
+
+          {badges.length > 0 && (
+            <div className="mt-6">
+              <div className="mb-2 text-xs font-medium uppercase tracking-wide text-ink-faint">
+                Certifications &amp; attestations
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {badges.map((b) => (
+                  <span
+                    key={b}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-medium text-ink"
+                  >
+                    <BadgeCheck size={15} className="text-brand-600" />
+                    {b}
+                  </span>
+                ))}
+              </div>
             </div>
+          )}
+
+          <div className="mt-8 flex flex-wrap gap-8 text-sm">
+            <Stat value={docs.length} label="Documents" />
+            <Stat value={publicCount} label="Public" />
+            <Stat value={docs.length - publicCount} label="Under NDA" icon />
           </div>
         </div>
       </section>
 
-      {/* Highlights */}
-      <section className="border-b border-slate-200 bg-slate-50">
-        <div className="mx-auto grid max-w-6xl gap-6 px-6 py-12 sm:grid-cols-2 lg:grid-cols-4">
-          <Highlight icon={<FileCheck size={20} />} title="Audited" desc="Independent SOC 2 & ISO 27001 examinations." />
-          <Highlight icon={<Lock size={20} />} title="Encrypted" desc="Data encrypted in transit and at rest." />
-          <Highlight icon={<Server size={20} />} title="Resilient" desc="Tested continuity and incident response." />
-          <Highlight icon={<ShieldCheck size={20} />} title="Governed" desc="Policies reviewed and enforced." />
-        </div>
-      </section>
-
-      {/* Library */}
-      <main className="mx-auto max-w-6xl px-6 py-14">
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold tracking-tight text-ink">
-            Document library
-          </h2>
-          <p className="mt-1 text-ink-soft">
-            All downloads require a few details. Confidential documents also
-            require accepting an NDA.
+      {/* Document center */}
+      <main className="mx-auto max-w-5xl px-6 py-10">
+        <div className="mb-4">
+          <h2 className="text-xl font-bold tracking-tight text-ink">Document center</h2>
+          <p className="text-sm text-ink-soft">
+            Search and filter by category, industry, region, or framework. All
+            downloads require a few details; confidential documents also require an
+            NDA.
           </p>
         </div>
         {libraryDocs.length > 0 ? (
@@ -97,9 +113,8 @@ export default async function HomePage() {
         )}
       </main>
 
-      {/* Footer */}
       <footer className="border-t border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-6 py-8 text-sm text-ink-faint sm:flex-row">
+        <div className="mx-auto flex max-w-5xl flex-col items-center justify-between gap-3 px-6 py-8 text-sm text-ink-faint sm:flex-row">
           <span>
             © {new Date().getFullYear()} {COMPANY}. All rights reserved.
           </span>
@@ -112,31 +127,14 @@ export default async function HomePage() {
   );
 }
 
-function Stat({ value, label }: { value: number; label: string }) {
+function Stat({ value, label, icon }: { value: number; label: string; icon?: boolean }) {
   return (
     <div>
-      <div className="text-2xl font-bold text-ink">{value}</div>
-      <div className="text-ink-faint">{label}</div>
-    </div>
-  );
-}
-
-function Highlight({
-  icon,
-  title,
-  desc,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  desc: string;
-}) {
-  return (
-    <div className="card p-5">
-      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
-        {icon}
+      <div className="flex items-center gap-1.5 text-2xl font-bold text-ink">
+        {icon && <Lock size={16} className="text-amber-500" />}
+        {value}
       </div>
-      <h3 className="mt-3 font-semibold text-ink">{title}</h3>
-      <p className="mt-1 text-sm text-ink-soft">{desc}</p>
+      <div className="text-ink-faint">{label}</div>
     </div>
   );
 }

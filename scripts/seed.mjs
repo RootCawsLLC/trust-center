@@ -125,20 +125,20 @@ confidence.
 This is a demonstration NDA template. Replace with your organization's approved
 language in the admin console before UAT.`;
 
-  // Reset mutable content (never the ledger).
-  await prisma.document.deleteMany({});
-  await prisma.ndaTemplate.deleteMany({});
-  await prisma.mockSalesforceCustomer.deleteMany({});
-  await prisma.salesLead.deleteMany({});
-
-  const nda = await prisma.ndaTemplate.create({
-    data: {
-      name: "Standard Mutual NDA (Template)",
-      bodyMarkdown: ndaBody,
-      isActive: true,
-      isDefault: true,
-    },
-  });
+  // Idempotent: upsert content so re-seeding is safe even after requests exist
+  // (deleting documents referenced by the immutable ledger would violate FKs).
+  const ndaName = "Standard Mutual NDA (Template)";
+  let nda = await prisma.ndaTemplate.findFirst({ where: { name: ndaName } });
+  if (nda) {
+    nda = await prisma.ndaTemplate.update({
+      where: { id: nda.id },
+      data: { bodyMarkdown: ndaBody, isActive: true, isDefault: true },
+    });
+  } else {
+    nda = await prisma.ndaTemplate.create({
+      data: { name: ndaName, bodyMarkdown: ndaBody, isActive: true, isDefault: true },
+    });
+  }
 
   // --- Mock Salesforce customer directory ---
   const customers = [
@@ -149,50 +149,78 @@ language in the admin console before UAT.`;
     { accountName: "Adventure Works", primaryDomain: "adventure-works.com", additionalDomains: [], tier: "Mid-Market", region: "AMER", accountOwner: "Sam Ruiz" },
     { accountName: "Wingtip Toys", primaryDomain: "wingtiptoys.com", additionalDomains: [], tier: "SMB", region: "EMEA", accountOwner: "Lee Warren" },
   ];
-  await prisma.mockSalesforceCustomer.createMany({ data: customers });
+  for (const c of customers) {
+    await prisma.mockSalesforceCustomer.upsert({
+      where: { primaryDomain: c.primaryDomain },
+      update: c,
+      create: c,
+    });
+  }
 
-  // --- Documents (mix of public/private across categories) ---
+  // --- Documents (mix of public/private, categories, and taxonomy tags) ---
   const docs = [
-    { title: "Information Security Policy", category: "POLICY", visibility: "PUBLIC", desc: "Our overarching information security policy and governance model.", lines: ["Scope, roles, and responsibilities.", "Acceptable use and data classification.", "Reviewed annually by the security team."] },
-    { title: "SOC 2 Type II Report", category: "AUDIT", visibility: "PRIVATE", desc: "Independent SOC 2 Type II examination covering Security and Availability.", lines: ["Auditor: Example Assurance LLP.", "Period: 12 months.", "Contains detailed control test results."] },
-    { title: "Penetration Test Summary", category: "REPORT", visibility: "PRIVATE", desc: "Executive summary of our latest third-party penetration test.", lines: ["Tester: Example Offensive Security.", "No critical findings outstanding.", "Full report available under NDA."] },
-    { title: "ISO 27001 Certificate", category: "CERTIFICATION", visibility: "PUBLIC", desc: "Our current ISO/IEC 27001 certificate of registration.", lines: ["Certificate number: ISO-EX-27001-001.", "Valid for three years, surveillance audits annual."] },
-    { title: "Business Continuity Plan", category: "PROCEDURE", visibility: "PRIVATE", desc: "How we maintain and recover critical services during disruption.", lines: ["RTO/RPO targets by service tier.", "Annual tabletop exercise results."] },
-    { title: "Data Processing Whitepaper", category: "WHITEPAPER", visibility: "PUBLIC", desc: "How customer data is processed, stored, and protected.", lines: ["Sub-processor list and locations.", "Encryption in transit and at rest.", "Data residency options."] },
-    { title: "Vulnerability Management Procedure", category: "PROCEDURE", visibility: "PUBLIC", desc: "Our process for identifying, triaging, and remediating vulnerabilities.", lines: ["SLA by severity.", "Scanning cadence and tooling."] },
-    { title: "Incident Response Plan", category: "PROCEDURE", visibility: "PRIVATE", desc: "Roles, runbooks, and communications for security incidents.", lines: ["Severity definitions.", "Notification timelines.", "Post-incident review process."] },
+    { title: "ISO 27001 Certificate", category: "CERTIFICATION", visibility: "PUBLIC", desc: "Our current ISO/IEC 27001 certificate of registration.", frameworks: ["ISO 27001"], regions: ["Global"], industries: [], lines: ["Certificate number: ISO-EX-27001-001.", "Valid three years, surveillance audits annual."] },
+    { title: "ISO 27701 Privacy Certificate", category: "CERTIFICATION", visibility: "PUBLIC", desc: "ISO/IEC 27701 privacy information management certification.", frameworks: ["ISO 27701", "GDPR"], regions: ["Global", "European Union"], industries: [], lines: ["Extends our ISMS to privacy.", "Covers PII controllers and processors."] },
+    { title: "HITRUST CSF Certification", category: "CERTIFICATION", visibility: "PUBLIC", desc: "HITRUST CSF certification for healthcare data handling.", frameworks: ["HITRUST", "HIPAA"], regions: ["North America"], industries: ["Healthcare"], lines: ["r2 validated assessment.", "Covers the full HITRUST control set."] },
+    { title: "PCI DSS Attestation of Compliance", category: "CERTIFICATION", visibility: "PRIVATE", desc: "PCI DSS v4.0 Attestation of Compliance (AoC).", frameworks: ["PCI DSS"], regions: ["Global"], industries: ["Financial Services", "Retail & E-commerce"], lines: ["Service Provider Level 1.", "Full AoC available under NDA."] },
+    { title: "FedRAMP Authorization Letter", category: "CERTIFICATION", visibility: "PRIVATE", desc: "FedRAMP Moderate authorization letter for our government offering.", frameworks: ["FedRAMP", "NIST CSF"], regions: ["North America"], industries: ["Public Sector"], lines: ["Agency ATO on file.", "Package available to agencies under NDA."] },
+    { title: "SOC 2 Type II Report", category: "AUDIT", visibility: "PRIVATE", desc: "Independent SOC 2 Type II examination covering Security and Availability.", frameworks: ["SOC 2"], regions: ["North America"], industries: [], lines: ["Auditor: Example Assurance LLP.", "Period: 12 months.", "Detailed control test results."] },
+    { title: "SOC 3 Report", category: "AUDIT", visibility: "PUBLIC", desc: "Public SOC 3 general-use report.", frameworks: ["SOC 2"], regions: ["North America"], industries: [], lines: ["General-use summary of our SOC 2.", "Freely shareable."] },
+    { title: "Penetration Test Summary", category: "REPORT", visibility: "PRIVATE", desc: "Executive summary of our latest third-party penetration test.", frameworks: [], regions: ["Global"], industries: [], lines: ["Tester: Example Offensive Security.", "No critical findings outstanding.", "Full report under NDA."] },
+    { title: "Information Security Policy", category: "POLICY", visibility: "PUBLIC", desc: "Our overarching information security policy and governance model.", frameworks: ["ISO 27001", "SOC 2"], regions: ["Global"], industries: [], lines: ["Scope, roles, and responsibilities.", "Acceptable use and data classification."] },
+    { title: "Data Retention & Deletion Policy", category: "POLICY", visibility: "PUBLIC", desc: "How long we keep data and how we delete it on request.", frameworks: ["GDPR", "CCPA"], regions: ["European Union", "North America"], industries: [], lines: ["Retention schedule by data type.", "Right-to-erasure workflow."] },
+    { title: "Business Continuity Plan", category: "PROCEDURE", visibility: "PRIVATE", desc: "How we maintain and recover critical services during disruption.", frameworks: ["ISO 27001"], regions: ["Global"], industries: [], lines: ["RTO/RPO targets by service tier.", "Annual tabletop results."] },
+    { title: "Incident Response Plan", category: "PROCEDURE", visibility: "PRIVATE", desc: "Roles, runbooks, and communications for security incidents.", frameworks: ["SOC 2", "NIST CSF"], regions: ["Global"], industries: [], lines: ["Severity definitions.", "Breach notification timelines."] },
+    { title: "Vulnerability Management Procedure", category: "PROCEDURE", visibility: "PUBLIC", desc: "Our process for identifying, triaging, and remediating vulnerabilities.", frameworks: ["ISO 27001"], regions: ["Global"], industries: [], lines: ["Remediation SLA by severity.", "Scanning cadence and tooling."] },
+    { title: "HIPAA Compliance Overview", category: "WHITEPAPER", visibility: "PUBLIC", desc: "How we support HIPAA-covered entities and business associates.", frameworks: ["HIPAA", "HITRUST"], regions: ["North America"], industries: ["Healthcare"], lines: ["BAA available on request.", "Safeguards mapped to the Security Rule."] },
+    { title: "Data Processing Whitepaper", category: "WHITEPAPER", visibility: "PUBLIC", desc: "How customer data is processed, stored, and protected.", frameworks: ["GDPR"], regions: ["European Union", "Global"], industries: [], lines: ["Sub-processor list and locations.", "Encryption in transit and at rest.", "Data residency options."] },
+    { title: "GDPR Data Processing Addendum (DPA)", category: "LEGAL", visibility: "PRIVATE", desc: "Our standard GDPR-compliant Data Processing Addendum.", frameworks: ["GDPR"], regions: ["European Union", "United Kingdom"], industries: [], lines: ["Standard Contractual Clauses included.", "Countersigned copy under NDA."] },
+    { title: "EU AI Act Addendum", category: "LEGAL", visibility: "PRIVATE", desc: "Contractual addendum addressing EU AI Act obligations.", frameworks: ["EU AI Act"], regions: ["European Union"], industries: ["Technology"], lines: ["Risk classification of AI features.", "Transparency and human-oversight commitments."] },
   ];
 
-  let n = 0;
+  let created = 0;
+  let updated = 0;
   for (const d of docs) {
-    const created = await prisma.document.create({
+    const common = {
+      description: d.desc,
+      category: d.category,
+      visibility: d.visibility,
+      isPublished: true,
+      industries: d.industries ?? [],
+      regions: d.regions ?? [],
+      frameworks: d.frameworks ?? [],
+      ndaTemplateId: d.visibility === "PRIVATE" ? nda.id : null,
+    };
+    const existing = await prisma.document.findFirst({ where: { title: d.title } });
+    if (existing) {
+      await prisma.document.update({ where: { id: existing.id }, data: common });
+      updated++;
+      continue;
+    }
+    const doc = await prisma.document.create({
       data: {
         title: d.title,
-        description: d.desc,
-        category: d.category,
-        visibility: d.visibility,
+        ...common,
         storageKey: "pending",
         fileName: `${d.title.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.pdf`,
         mimeType: "application/pdf",
         sizeBytes: 0,
         version: "1.0",
-        isPublished: true,
-        ndaTemplateId: d.visibility === "PRIVATE" ? nda.id : null,
         createdById: owner.id,
       },
     });
     const pdf = makePdf(d.title, [d.desc, "", ...d.lines]);
-    const key = `documents/${created.id}.pdf`;
+    const key = `documents/${doc.id}.pdf`;
     await storeBlob(key, pdf, "application/pdf");
     await prisma.document.update({
-      where: { id: created.id },
+      where: { id: doc.id },
       data: { storageKey: key, sizeBytes: pdf.length },
     });
-    n++;
+    created++;
   }
 
   console.log(
-    `[seed] users(owner+viewer), NDA template, ${customers.length} SF customers, ${n} documents. Admin: ${adminEmail}`,
+    `[seed] users, NDA template, ${customers.length} SF customers, documents: ${created} created / ${updated} updated. Admin: ${adminEmail}`,
   );
 }
 
