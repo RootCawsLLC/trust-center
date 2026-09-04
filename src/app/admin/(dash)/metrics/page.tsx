@@ -1,10 +1,15 @@
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { PageHeader, StatCard } from "@/components/admin/ui";
+import { FilterBar } from "@/components/admin/FilterBar";
+import { dateRangeWhere, firstStr } from "@/lib/filters";
 import { cn } from "@/lib/utils";
+import type { Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
 type Row = { label: string; n: number };
+type SP = Promise<Record<string, string | string[] | undefined>>;
 
 function tally(pairs: string[]): Row[] {
   const m = new Map<string, number>();
@@ -12,25 +17,33 @@ function tally(pairs: string[]): Row[] {
   return [...m.entries()].map(([label, n]) => ({ label, n })).sort((a, b) => b.n - a.n);
 }
 
-export default async function MetricsPage() {
-  const [total, customers, leads, ndas, zips, requests, months] = await Promise.all([
-    prisma.downloadRequest.count(),
-    prisma.downloadRequest.count({ where: { classification: "CUSTOMER" } }),
-    prisma.downloadRequest.count({ where: { classification: "LEAD" } }),
-    prisma.ndaAcceptance.count(),
-    prisma.bulkDownload.count(),
-    prisma.downloadRequest.findMany({
-      select: { documentId: true, documentTitle: true, documentVisibility: true, emailDomain: true },
-    }),
-    prisma.$queryRawUnsafe<{ label: string; n: number }[]>(
-      `SELECT to_char(date_trunc('month', "createdAt"), 'Mon YYYY') AS label, count(*)::int AS n
-       FROM "DownloadRequest"
-       GROUP BY date_trunc('month', "createdAt")
-       ORDER BY date_trunc('month', "createdAt") ASC`,
-    ),
-  ]);
+function qs(base: Record<string, string>, from?: string, to?: string) {
+  const p = new URLSearchParams(base);
+  if (from) p.set("from", from);
+  if (to) p.set("to", to);
+  return p.toString();
+}
 
-  // Frameworks / industries requested (weighted by request count).
+export default async function MetricsPage({ searchParams }: { searchParams: SP }) {
+  const sp = await searchParams;
+  const from = firstStr(sp.from);
+  const to = firstStr(sp.to);
+  const createdAt = dateRangeWhere(from, to);
+  const reqWhere: Prisma.DownloadRequestWhereInput = createdAt ? { createdAt } : {};
+  const dateWhere = createdAt ? { createdAt } : {};
+
+  const [customers, leads, ndas, zips, requests] = await Promise.all([
+    prisma.downloadRequest.count({ where: { ...reqWhere, classification: "CUSTOMER" } }),
+    prisma.downloadRequest.count({ where: { ...reqWhere, classification: "LEAD" } }),
+    prisma.ndaAcceptance.count({ where: dateWhere }),
+    prisma.bulkDownload.count({ where: createdAt ? { createdAt } : {} }),
+    prisma.downloadRequest.findMany({
+      where: reqWhere,
+      select: { documentId: true, documentTitle: true, documentVisibility: true, emailDomain: true, createdAt: true },
+    }),
+  ]);
+  const total = requests.length;
+
   const docIds = [...new Set(requests.map((r) => r.documentId))];
   const docs = await prisma.document.findMany({
     where: { id: { in: docIds } },
@@ -38,29 +51,29 @@ export default async function MetricsPage() {
   });
   const docMap = new Map(docs.map((d) => [d.id, d]));
 
+  const months = tally(
+    requests.map((r) => r.createdAt.toLocaleString("en-US", { month: "short", year: "numeric" })),
+  ).reverse();
   const byDoc = tally(requests.map((r) => r.documentTitle)).slice(0, 8);
   const byDomain = tally(requests.map((r) => r.emailDomain)).slice(0, 8);
-  const byFramework = tally(
-    requests.flatMap((r) => docMap.get(r.documentId)?.frameworks ?? []),
-  ).slice(0, 8);
-  const byIndustry = tally(
-    requests.flatMap((r) => docMap.get(r.documentId)?.industries ?? []),
-  ).slice(0, 8);
+  const byFramework = tally(requests.flatMap((r) => docMap.get(r.documentId)?.frameworks ?? [])).slice(0, 8);
+  const byIndustry = tally(requests.flatMap((r) => docMap.get(r.documentId)?.industries ?? [])).slice(0, 8);
   const publicN = requests.filter((r) => r.documentVisibility === "PUBLIC").length;
-  const privateN = requests.length - publicN;
 
   return (
     <div>
       <PageHeader
         title="Metrics"
-        description="Requests, demand by document and framework, and customer-vs-lead mix — for leadership reporting."
+        description="Requests, demand by document and framework, and customer-vs-lead mix. Filter by date; click any bar to drill into the underlying requests."
       />
 
+      <FilterBar searchPlaceholder="" showDateRange />
+
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        <StatCard label="Total requests" value={total} href="/admin/requests" />
-        <StatCard label="Customers" value={customers} href="/admin/requests?type=CUSTOMER" />
-        <StatCard label="Leads" value={leads} href="/admin/requests?type=LEAD" />
-        <StatCard label="NDAs signed" value={ndas} />
+        <StatCard label="Total requests" value={total} href={`/admin/requests?${qs({}, from, to)}`} />
+        <StatCard label="Customers" value={customers} href={`/admin/requests?${qs({ type: "CUSTOMER" }, from, to)}`} />
+        <StatCard label="Leads" value={leads} href={`/admin/requests?${qs({ type: "LEAD" }, from, to)}`} />
+        <StatCard label="NDAs signed" value={ndas} href={`/admin/requests?${qs({ nda: "accepted" }, from, to)}`} />
         <StatCard label="Bulk ZIPs" value={zips} />
       </div>
 
@@ -70,18 +83,16 @@ export default async function MetricsPage() {
         </Panel>
         <Panel title="Customer vs lead">
           <Bars
-            rows={[
-              { label: "Customers", n: customers },
-              { label: "Leads", n: leads },
-            ]}
+            rows={[{ label: "Customers", n: customers }, { label: "Leads", n: leads }]}
             accent="split"
+            hrefFor={(l) => `/admin/requests?${qs({ type: l === "Customers" ? "CUSTOMER" : "LEAD" }, from, to)}`}
           />
           <div className="mt-3 text-xs text-ink-faint">
-            Public downloads: {publicN} · Under NDA: {privateN}
+            Public downloads: {publicN} · Under NDA: {total - publicN}
           </div>
         </Panel>
         <Panel title="Most requested documents">
-          <Bars rows={byDoc} accent="brand" />
+          <Bars rows={byDoc} accent="brand" hrefFor={(l) => `/admin/requests?${qs({ q: l }, from, to)}`} />
         </Panel>
         <Panel title="Demand by framework">
           <Bars rows={byFramework} accent="emerald" />
@@ -90,7 +101,7 @@ export default async function MetricsPage() {
           <Bars rows={byIndustry} accent="amber" />
         </Panel>
         <Panel title="Top requesting domains">
-          <Bars rows={byDomain} accent="brand" />
+          <Bars rows={byDomain} accent="brand" hrefFor={(l) => `/admin/requests?${qs({ q: l }, from, to)}`} />
         </Panel>
       </div>
     </div>
@@ -112,26 +123,29 @@ const ACCENT: Record<string, string> = {
   amber: "bg-amber-500",
 };
 
-function Bars({ rows, accent = "brand" }: { rows: Row[]; accent?: string }) {
-  if (rows.length === 0) return <p className="text-sm text-ink-faint">No data yet.</p>;
+function Bars({ rows, accent = "brand", hrefFor }: { rows: Row[]; accent?: string; hrefFor?: (label: string) => string }) {
+  if (rows.length === 0) return <p className="text-sm text-ink-faint">No data in this period.</p>;
   const max = Math.max(...rows.map((r) => r.n), 1);
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       {rows.map((r, i) => (
-        <div key={r.label} className="flex items-center gap-3 text-sm">
-          <div className="w-32 shrink-0 truncate text-ink-soft" title={r.label}>
-            {r.label}
+        <div key={r.label}>
+          <div className="flex items-baseline justify-between gap-3 text-sm">
+            {hrefFor ? (
+              <Link href={hrefFor(r.label)} className="truncate font-medium text-brand-700 hover:underline" title={r.label}>
+                {r.label}
+              </Link>
+            ) : (
+              <span className="truncate text-ink-soft" title={r.label}>{r.label}</span>
+            )}
+            <span className="shrink-0 font-semibold text-ink">{r.n}</span>
           </div>
-          <div className="h-5 flex-1 overflow-hidden rounded bg-slate-100">
+          <div className="mt-1 h-2.5 overflow-hidden rounded-full bg-slate-100">
             <div
-              className={cn(
-                "h-full rounded",
-                accent === "split" ? (i === 0 ? "bg-emerald-500" : "bg-blue-500") : ACCENT[accent],
-              )}
-              style={{ width: `${Math.max((r.n / max) * 100, 4)}%` }}
+              className={cn("h-full rounded-full", accent === "split" ? (i === 0 ? "bg-emerald-500" : "bg-blue-500") : ACCENT[accent])}
+              style={{ width: `${Math.max((r.n / max) * 100, 3)}%` }}
             />
           </div>
-          <div className="w-8 shrink-0 text-right font-medium text-ink">{r.n}</div>
         </div>
       ))}
     </div>
