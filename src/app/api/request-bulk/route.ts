@@ -6,7 +6,7 @@ import { matchCustomerByDomain, isFreemail } from "@/lib/salesforce";
 import { logAudit, clientIpFromHeaders } from "@/lib/audit";
 import { domainFromEmail } from "@/lib/utils";
 
-const GRANT_TTL_MINUTES = 15;
+import { grantExpiryDate } from "@/lib/settings";
 
 export async function POST(req: Request) {
   const json = await req.json().catch(() => null);
@@ -108,7 +108,7 @@ export async function POST(req: Request) {
       batchId,
       requesterEmail: email,
       documentIds: docs.map((d) => d.id),
-      expiresAt: new Date(Date.now() + GRANT_TTL_MINUTES * 60_000),
+      expiresAt: await grantExpiryDate(),
     },
   });
 

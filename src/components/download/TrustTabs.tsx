@@ -42,12 +42,25 @@ export function TrustTabs({
   subprocessors,
   articles,
   updates,
+  showSubprocessors = true,
+  showKnowledge = true,
+  showUpdates = true,
 }: {
   docs: LibraryDoc[];
   subprocessors: SubprocessorItem[];
   articles: ArticleItem[];
   updates: UpdateItem[];
+  showSubprocessors?: boolean;
+  showKnowledge?: boolean;
+  showUpdates?: boolean;
 }) {
+  const visible: Record<string, boolean> = {
+    documents: true,
+    subprocessors: showSubprocessors,
+    knowledge: showKnowledge,
+    updates: showUpdates,
+  };
+  const tabs = TABS.filter((t) => visible[t.key]);
   const [tab, setTab] = useState<(typeof TABS)[number]["key"]>("documents");
 
   const counts: Record<string, number> = {
@@ -60,7 +73,7 @@ export function TrustTabs({
   return (
     <div>
       <div className="mb-6 flex gap-1 overflow-x-auto border-b border-slate-200">
-        {TABS.map((t) => {
+        {tabs.map((t) => {
           const Icon = t.icon;
           const active = tab === t.key;
           return (

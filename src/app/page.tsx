@@ -4,19 +4,17 @@ import { prisma } from "@/lib/prisma";
 import { CertBadge } from "@/components/marketing/CertBadge";
 import { type LibraryDoc } from "@/components/download/DocumentLibrary";
 import { TrustTabs } from "@/components/download/TrustTabs";
+import { getOrgSettings } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
-
-const COMPANY = process.env.COMPANY_NAME ?? "Acme Corp";
-const TAGLINE = "Security, privacy, and compliance — transparent by default.";
-const OVERVIEW = `${COMPANY} builds enterprise software with security and privacy at its core. This Trust Center is where customers and prospects review our certifications, audit reports, policies, and legal documents. Public materials are available instantly; confidential materials are shared under NDA.`;
 
 function uniqueSorted(v: string[]) {
   return [...new Set(v)].sort((a, b) => a.localeCompare(b));
 }
 
 export default async function HomePage() {
-  const [docs, subprocessors, articles, updates] = await Promise.all([
+  const [settings, docs, subprocessors, articles, updates] = await Promise.all([
+    getOrgSettings(),
     prisma.document.findMany({
       where: { isPublished: true },
       orderBy: [{ category: "asc" }, { title: "asc" }],
@@ -56,7 +54,7 @@ export default async function HomePage() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white">
               <ShieldCheck size={18} />
             </div>
-            <span className="font-semibold text-ink">{COMPANY} Trust Center</span>
+            <span className="font-semibold text-ink">{settings.companyName} Trust Center</span>
           </div>
         </div>
       </header>
@@ -68,9 +66,9 @@ export default async function HomePage() {
             <ShieldCheck size={13} /> Trust Center
           </span>
           <h1 className="mt-4 text-3xl font-bold tracking-tight text-ink sm:text-4xl">
-            {TAGLINE}
+            {settings.tagline}
           </h1>
-          <p className="mt-3 max-w-4xl text-lg text-ink-soft">{OVERVIEW}</p>
+          <p className="mt-3 text-lg text-ink-soft">{settings.overview}</p>
 
           {badges.length > 0 && (
             <div className="mt-7">
@@ -98,6 +96,9 @@ export default async function HomePage() {
           </p>
         </div>
         <TrustTabs
+          showSubprocessors={settings.showSubprocessors}
+          showKnowledge={settings.showKnowledge}
+          showUpdates={settings.showUpdates}
           docs={libraryDocs}
           subprocessors={subprocessors.map((s) => ({
             id: s.id,
@@ -129,7 +130,7 @@ export default async function HomePage() {
       <footer className="border-t border-slate-200 bg-white">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-6 py-8 text-sm text-ink-faint sm:flex-row">
           <span>
-            © {new Date().getFullYear()} {COMPANY}. All rights reserved.
+            © {new Date().getFullYear()} {settings.companyName}. All rights reserved.
           </span>
           <Link href="/admin" className="inline-flex items-center gap-1 hover:text-ink">
             Vendor admin <ArrowRight size={13} />

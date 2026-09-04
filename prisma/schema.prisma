@@ -341,3 +341,19 @@ model AuditLog {
   @@index([createdAt])
   @@index([action])
 }
+
+// Singleton org/trust-center configuration (id is always "singleton").
+model OrgSettings {
+  id                String   @id @default("singleton")
+  companyName       String?
+  tagline           String?
+  overview          String?  @db.Text
+  supportEmail      String?
+  primaryColor      String? // hex, applied as an accent
+  showSubprocessors Boolean  @default(true)
+  showKnowledge     Boolean  @default(true)
+  showUpdates       Boolean  @default(true)
+  grantTtlMinutes   Int      @default(15)
+  retentionNote     String?  @db.Text
+  updatedAt         DateTime @updatedAt
+}

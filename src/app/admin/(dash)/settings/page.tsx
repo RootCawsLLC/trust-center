@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { ssoEnabled, env } from "@/lib/env";
 import { PageHeader, Pill } from "@/components/admin/ui";
 import { CheckCircle2, Circle, ShieldCheck } from "lucide-react";
+import { getOrgSettings } from "@/lib/settings";
+import { SettingsForm } from "./SettingsForm";
 
 export const dynamic = "force-dynamic";
 
@@ -16,13 +18,18 @@ async function ledgerImmutable(): Promise<boolean> {
 
 export default async function SettingsPage() {
   const immutable = await ledgerImmutable().catch(() => false);
+  const settings = await getOrgSettings();
 
   return (
     <div>
       <PageHeader
         title="Settings"
-        description="Authentication, storage, and security configuration."
+        description="Branding, public sections, requests, authentication, and security."
       />
+
+      <div className="mb-6">
+        <SettingsForm settings={settings} />
+      </div>
 
       <div className="space-y-6">
         <section className="card p-6">

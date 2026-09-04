@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { bulkNdaAcceptSchema } from "@/lib/validation";
 import { logAudit, clientIpFromHeaders } from "@/lib/audit";
 
-const GRANT_TTL_MINUTES = 15;
+import { grantExpiryDate } from "@/lib/settings";
 
 export async function POST(req: Request) {
   const json = await req.json().catch(() => null);
@@ -73,7 +73,7 @@ export async function POST(req: Request) {
         batchId,
         requesterEmail,
         documentIds: requests.map((r) => r.documentId),
-        expiresAt: new Date(Date.now() + GRANT_TTL_MINUTES * 60_000),
+        expiresAt: await grantExpiryDate(),
       },
     }));
 
