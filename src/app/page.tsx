@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ShieldCheck, BadgeCheck, ArrowRight, Lock } from "lucide-react";
+import { ShieldCheck, BadgeCheck, ArrowRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { type LibraryDoc } from "@/components/download/DocumentLibrary";
 import { TrustTabs } from "@/components/download/TrustTabs";
@@ -20,18 +20,9 @@ export default async function HomePage() {
       where: { isPublished: true },
       orderBy: [{ category: "asc" }, { title: "asc" }],
     }),
-    prisma.subprocessor.findMany({
-      where: { isActive: true },
-      orderBy: { sortOrder: "asc" },
-    }),
-    prisma.knowledgeArticle.findMany({
-      where: { isPublished: true },
-      orderBy: { sortOrder: "asc" },
-    }),
-    prisma.trustUpdate.findMany({
-      where: { isPublished: true },
-      orderBy: { publishedAt: "desc" },
-    }),
+    prisma.subprocessor.findMany({ where: { isActive: true }, orderBy: { sortOrder: "asc" } }),
+    prisma.knowledgeArticle.findMany({ where: { isPublished: true }, orderBy: { sortOrder: "asc" } }),
+    prisma.trustUpdate.findMany({ where: { isPublished: true }, orderBy: { publishedAt: "desc" } }),
   ]);
 
   const libraryDocs: LibraryDoc[] = docs.map((d) => ({
@@ -49,7 +40,6 @@ export default async function HomePage() {
     frameworks: d.frameworks,
   }));
 
-  const publicCount = docs.filter((d) => d.visibility === "PUBLIC").length;
   const badges = uniqueSorted(
     docs
       .filter((d) => d.category === "CERTIFICATION" || d.category === "AUDIT")
@@ -60,32 +50,29 @@ export default async function HomePage() {
     <div className="min-h-screen">
       {/* Header */}
       <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3.5">
+        <div className="mx-auto flex max-w-6xl items-center px-6 py-3.5">
           <div className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white">
               <ShieldCheck size={18} />
             </div>
             <span className="font-semibold text-ink">{COMPANY} Trust Center</span>
           </div>
-          <Link href="/admin" className="btn-ghost text-sm">
-            Admin
-          </Link>
         </div>
       </header>
 
       {/* Overview */}
       <section className="border-b border-slate-200 bg-white">
-        <div className="mx-auto max-w-5xl px-6 py-12">
+        <div className="mx-auto max-w-6xl px-6 py-12">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-3 py-1 text-xs font-medium text-brand-700 ring-1 ring-inset ring-brand-200">
             <ShieldCheck size={13} /> Trust Center
           </span>
-          <h1 className="mt-4 max-w-2xl text-3xl font-bold tracking-tight text-ink sm:text-4xl">
+          <h1 className="mt-4 text-3xl font-bold tracking-tight text-ink sm:text-4xl">
             {TAGLINE}
           </h1>
-          <p className="mt-3 max-w-2xl text-ink-soft">{OVERVIEW}</p>
+          <p className="mt-3 max-w-4xl text-lg text-ink-soft">{OVERVIEW}</p>
 
           {badges.length > 0 && (
-            <div className="mt-6">
+            <div className="mt-7">
               <div className="mb-2 text-xs font-medium uppercase tracking-wide text-ink-faint">
                 Certifications &amp; attestations
               </div>
@@ -102,17 +89,11 @@ export default async function HomePage() {
               </div>
             </div>
           )}
-
-          <div className="mt-8 flex flex-wrap gap-8 text-sm">
-            <Stat value={docs.length} label="Documents" />
-            <Stat value={publicCount} label="Public" />
-            <Stat value={docs.length - publicCount} label="Under NDA" icon />
-          </div>
         </div>
       </section>
 
-      {/* Document center */}
-      <main className="mx-auto max-w-5xl px-6 py-10">
+      {/* Resources */}
+      <main className="mx-auto max-w-6xl px-6 py-10">
         <div className="mb-4">
           <h2 className="text-xl font-bold tracking-tight text-ink">Resources</h2>
           <p className="text-sm text-ink-soft">
@@ -144,13 +125,10 @@ export default async function HomePage() {
             publishedAt: u.publishedAt.toISOString(),
           }))}
         />
-        {libraryDocs.length === 0 && (
-          <p className="mt-2 text-ink-faint">No documents published yet.</p>
-        )}
       </main>
 
       <footer className="border-t border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-5xl flex-col items-center justify-between gap-3 px-6 py-8 text-sm text-ink-faint sm:flex-row">
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-6 py-8 text-sm text-ink-faint sm:flex-row">
           <span>
             © {new Date().getFullYear()} {COMPANY}. All rights reserved.
           </span>
@@ -159,18 +137,6 @@ export default async function HomePage() {
           </Link>
         </div>
       </footer>
-    </div>
-  );
-}
-
-function Stat({ value, label, icon }: { value: number; label: string; icon?: boolean }) {
-  return (
-    <div>
-      <div className="flex items-center gap-1.5 text-2xl font-bold text-ink">
-        {icon && <Lock size={16} className="text-amber-500" />}
-        {value}
-      </div>
-      <div className="text-ink-faint">{label}</div>
     </div>
   );
 }

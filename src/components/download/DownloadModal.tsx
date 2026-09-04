@@ -157,6 +157,23 @@ export function DownloadModal({
         {/* Step: form */}
         {phase === "form" && (
           <form onSubmit={submitForm} className="space-y-4 p-5">
+            <div
+              className={
+                "flex items-center gap-2.5 rounded-lg p-3.5 text-base font-semibold ring-1 ring-inset " +
+                (isPrivate
+                  ? "bg-amber-50 text-amber-800 ring-amber-200"
+                  : "bg-emerald-50 text-emerald-800 ring-emerald-200")
+              }
+            >
+              {isPrivate ? (
+                <Lock size={20} className="shrink-0" />
+              ) : (
+                <ShieldCheck size={20} className="shrink-0" />
+              )}
+              {isPrivate
+                ? "You'll sign a quick NDA next before this confidential document is released."
+                : "No NDA required — your download starts as soon as you submit."}
+            </div>
             <p className="text-sm text-ink-soft">
               Tell us who you are to access this document. We use this to keep a
               record of who has our documentation.

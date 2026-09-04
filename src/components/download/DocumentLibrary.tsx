@@ -170,10 +170,20 @@ function DocRow({ doc, onOpen }: { doc: LibraryDoc; onOpen: () => void }) {
           </div>
         )}
       </div>
-      <button onClick={onOpen} className={cn(isPrivate ? "btn-secondary" : "btn-primary", "shrink-0")}>
-        <Download size={15} />
-        <span className="hidden sm:inline">{isPrivate ? "Request access" : "Download"}</span>
-      </button>
+      <div className="flex shrink-0 flex-col items-end gap-1">
+        <button onClick={onOpen} className={cn(isPrivate ? "btn-secondary" : "btn-primary")}>
+          <Download size={15} />
+          <span className="hidden sm:inline">{isPrivate ? "Request access" : "Download"}</span>
+        </button>
+        <span
+          className={cn(
+            "text-xs font-semibold",
+            isPrivate ? "text-amber-700" : "text-emerald-700",
+          )}
+        >
+          {isPrivate ? "NDA required" : "No NDA required"}
+        </span>
+      </div>
     </article>
   );
 }
