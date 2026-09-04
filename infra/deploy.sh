@@ -42,7 +42,12 @@ echo "==> 4/5 Running migrations, immutability hardening, and seed against RDS"
 echo "==> 5/5 Deploying App Runner service (deploy_service=true)"
 terraform apply -auto-approve -var deploy_service=true
 
+# The service URL isn't known until the service exists; set AUTH_URL/APP_URL to
+# it and re-apply so Auth.js builds correct redirect URLs.
+URL=$(terraform output -raw service_url)
+echo "==> Setting AUTH_URL to $URL and finalizing"
+terraform apply -auto-approve -var deploy_service=true -var app_url="$URL"
+
 echo
-echo "Done. Service URL:"
-terraform output -raw service_url
+echo "Done. Service URL: $URL"
 echo

@@ -50,10 +50,15 @@ npx prisma migrate deploy
 node scripts/apply-immutability.mjs
 STORAGE_DRIVER=s3 S3_BUCKET="$(terraform output -raw docs_bucket)" node scripts/seed.mjs
 
-# 5. Create the App Runner service
+# 5. Create the App Runner service, then set AUTH_URL to its URL and re-apply
 terraform apply -var deploy_service=true
-terraform output service_url
+URL=$(terraform output -raw service_url)
+terraform apply -var deploy_service=true -var app_url="$URL"
+echo "$URL"
 ```
+
+> The second apply sets `AUTH_URL` so Auth.js builds correct redirect URLs (the
+> app binds `0.0.0.0`, which otherwise misleads Auth.js's base-URL detection).
 
 ## Updating the app later
 
