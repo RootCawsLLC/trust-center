@@ -60,10 +60,11 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  accounts   Account[]
-  sessions   Session[]
-  documents  Document[]
-  savedViews SavedView[]
+  accounts         Account[]
+  sessions         Session[]
+  documents        Document[]
+  documentVersions DocumentVersion[]
+  savedViews       SavedView[]
 }
 
 // A named filter/view a user saves on a list tab (e.g., "Q2 2026 requests").
@@ -147,6 +148,7 @@ model Document {
   updatedAt DateTime @updatedAt
 
   requests DownloadRequest[]
+  versions DocumentVersion[]
 
   @@index([visibility])
   @@index([category])
@@ -211,6 +213,7 @@ model DownloadRequest {
   documentId         String
   document           Document           @relation(fields: [documentId], references: [id])
   documentTitle      String // snapshot at request time
+  documentVersion    String? // version snapshot (point-in-time)
   documentCategory   DocumentCategory
   documentVisibility DocumentVisibility
 
@@ -416,4 +419,23 @@ model ComplianceEvent {
   isPublished Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+// Every stored version of a document (point-in-time). The Document row mirrors
+// the latest version for convenience; history lives here.
+model DocumentVersion {
+  id          String   @id @default(cuid())
+  documentId  String
+  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  version     String
+  storageKey  String
+  fileName    String
+  mimeType    String
+  sizeBytes   Int
+  note        String?
+  createdById String?
+  createdBy   User?    @relation(fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+
+  @@index([documentId])
 }

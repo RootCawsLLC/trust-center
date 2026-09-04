@@ -40,6 +40,7 @@ export async function POST(req: Request) {
     data: {
       documentId: doc.id,
       documentTitle: doc.title,
+      documentVersion: doc.version,
       documentCategory: doc.category,
       documentVisibility: doc.visibility,
       requesterName: input.requesterName.trim(),

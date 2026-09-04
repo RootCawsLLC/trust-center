@@ -86,6 +86,19 @@ export async function createDocument(fd: FormData): Promise<ActionResult> {
     },
   });
 
+  await prisma.documentVersion.create({
+    data: {
+      documentId: doc.id,
+      version: doc.version,
+      storageKey,
+      fileName: file.name,
+      mimeType: file.type || "application/octet-stream",
+      sizeBytes: buf.length,
+      note: "Initial version",
+      createdById: session.user.id,
+    },
+  });
+
   await logAudit({
     action: "DOCUMENT_CREATE",
     actorUserId: session.user.id,
@@ -127,6 +140,7 @@ export async function updateDocument(
   let sizeBytes = existing.sizeBytes;
 
   const file = fd.get("file");
+  let newFileUploaded = false;
   if (file instanceof File && file.size > 0) {
     if (file.size > MAX_BYTES) return { ok: false, error: "File exceeds 40 MB" };
     const buf = Buffer.from(await file.arrayBuffer());
@@ -136,7 +150,9 @@ export async function updateDocument(
     fileName = file.name;
     mimeType = file.type || "application/octet-stream";
     sizeBytes = buf.length;
-    await deleteObject(existing.storageKey).catch(() => {});
+    newFileUploaded = true;
+    // Note: the previous file is intentionally NOT deleted — it is retained as a
+    // prior version for point-in-time history.
   }
 
   await prisma.document.update({
@@ -160,6 +176,21 @@ export async function updateDocument(
       sizeBytes,
     },
   });
+
+  if (newFileUploaded) {
+    await prisma.documentVersion.create({
+      data: {
+        documentId: id,
+        version: data.version || existing.version,
+        storageKey,
+        fileName,
+        mimeType,
+        sizeBytes,
+        note: String(fd.get("versionNote") ?? "").trim() || null,
+        createdById: session.user.id,
+      },
+    });
+  }
 
   await logAudit({
     action: "DOCUMENT_UPDATE",

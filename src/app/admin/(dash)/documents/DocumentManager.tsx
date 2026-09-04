@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Pencil, Trash2, X, Lock, Globe, Loader2, Upload, ChevronUp, ChevronDown, ChevronsUpDown, Eye } from "lucide-react";
+import Link from "next/link";
+import { Plus, Pencil, Trash2, X, Lock, Globe, Loader2, Upload, ChevronUp, ChevronDown, ChevronsUpDown, Eye, History } from "lucide-react";
 import { createDocument, updateDocument, deleteDocument } from "./actions";
 import { bytesToSize } from "@/lib/utils";
 import { CATEGORY_SINGULAR, INDUSTRIES, REGIONS, FRAMEWORKS } from "@/lib/constants";
@@ -169,6 +170,14 @@ export function DocumentManager({
                   <td className="px-4 py-3 text-ink-soft">{d.requestCount}</td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-1">
+                      <Link
+                        href={`/admin/documents/${d.id}/versions`}
+                        className="btn-ghost p-1.5"
+                        aria-label="Version history"
+                        title="Version history"
+                      >
+                        <History size={15} />
+                      </Link>
                       <button
                         className="btn-ghost p-1.5"
                         onClick={() => setEditing(d)}
