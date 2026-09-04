@@ -439,3 +439,14 @@ model DocumentVersion {
 
   @@index([documentId])
 }
+
+// Archiving hides requests from the working view WITHOUT touching the immutable
+// ledger (insert-only; the DownloadRequest rows are never modified or deleted).
+model RequestArchive {
+  id                String   @id @default(cuid())
+  downloadRequestId String   @unique
+  archivedById      String?
+  archivedByEmail   String?
+  reason            String?
+  archivedAt        DateTime @default(now())
+}

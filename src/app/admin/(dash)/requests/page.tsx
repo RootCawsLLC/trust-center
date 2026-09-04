@@ -4,6 +4,7 @@ import { PageHeader, ClassBadge, Pill } from "@/components/admin/ui";
 import { FilterBar } from "@/components/admin/FilterBar";
 import { SavedViews } from "@/components/admin/SavedViews";
 import { SortHeader } from "@/components/admin/SortHeader";
+import { RequestArchiveBar } from "@/components/admin/RequestArchiveBar";
 import { getSession } from "@/lib/session";
 import { formatDate } from "@/lib/utils";
 import { dateRangeWhere, firstStr, orderByFromParams } from "@/lib/filters";
@@ -47,6 +48,14 @@ export default async function RequestsPage({ searchParams }: { searchParams: SP 
   const createdAt = dateRangeWhere(from, to);
   if (createdAt) where.createdAt = createdAt;
 
+  // Archive: hide archived requests by default (active view). The immutable rows
+  // are untouched — RequestArchive just marks which to hide.
+  const view = firstStr(sp.view) || "active";
+  const archivedRows = await prisma.requestArchive.findMany({ select: { downloadRequestId: true } });
+  const archivedIds = archivedRows.map((a) => a.downloadRequestId);
+  if (view === "active" && archivedIds.length) where.id = { notIn: archivedIds };
+  else if (view === "archived") where.id = { in: archivedIds.length ? archivedIds : ["__none__"] };
+
   const requests = await prisma.downloadRequest.findMany({
     where,
     orderBy: orderByFromParams(firstStr(sp.sort), firstStr(sp.dir), REQ_SORTS, { createdAt: "desc" }),
@@ -71,6 +80,7 @@ export default async function RequestsPage({ searchParams }: { searchParams: SP 
       />
 
       <SavedViews views={savedViews} />
+      <RequestArchiveBar view={view} ids={requests.map((r) => r.id)} />
 
       <FilterBar
         searchPlaceholder="Search name, email, org, domain, document…"
