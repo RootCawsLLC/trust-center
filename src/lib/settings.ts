@@ -5,6 +5,7 @@ export type ResolvedSettings = {
   tagline: string;
   overview: string;
   supportEmail: string | null;
+  statusPageUrl: string | null;
   primaryColor: string | null;
   showSubprocessors: boolean;
   showKnowledge: boolean;
@@ -33,6 +34,7 @@ export async function getOrgSettings(): Promise<ResolvedSettings> {
     tagline: row?.tagline || "Security, privacy, and compliance — transparent by default.",
     overview: row?.overview || defaultOverview(companyName),
     supportEmail: row?.supportEmail ?? null,
+    statusPageUrl: row?.statusPageUrl ?? null,
     primaryColor: row?.primaryColor ?? null,
     showSubprocessors: row?.showSubprocessors ?? true,
     showKnowledge: row?.showKnowledge ?? true,

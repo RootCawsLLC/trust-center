@@ -40,6 +40,11 @@ export function SettingsForm({ settings }: { settings: ResolvedSettings }) {
             <input name="supportEmail" type="email" className="input" defaultValue={settings.supportEmail ?? ""} placeholder="trust@company.com" />
           </Field>
           <div className="sm:col-span-2">
+            <Field label="System status page URL">
+              <input name="statusPageUrl" type="url" className="input" defaultValue={settings.statusPageUrl ?? ""} placeholder="https://status.company.com" />
+            </Field>
+          </div>
+          <div className="sm:col-span-2">
             <Field label="Tagline (hero heading)">
               <input name="tagline" className="input" defaultValue={settings.tagline} />
             </Field>

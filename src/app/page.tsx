@@ -49,13 +49,23 @@ export default async function HomePage() {
     <div className="min-h-screen">
       {/* Header */}
       <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center px-6 py-3.5">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3.5">
           <div className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white">
               <ShieldCheck size={18} />
             </div>
             <span className="font-semibold text-ink">{settings.companyName} Trust Center</span>
           </div>
+          {settings.statusPageUrl && (
+            <a
+              href={settings.statusPageUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-soft hover:text-brand-700"
+            >
+              <span className="h-2 w-2 rounded-full bg-emerald-500" /> System status
+            </a>
+          )}
         </div>
       </header>
 

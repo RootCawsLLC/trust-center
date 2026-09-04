@@ -34,6 +34,7 @@ export async function saveSettings(fd: FormData): Promise<ActionResult> {
     tagline: s(fd, "tagline") || null,
     overview: s(fd, "overview") || null,
     supportEmail: s(fd, "supportEmail") || null,
+    statusPageUrl: s(fd, "statusPageUrl") || null,
     primaryColor: color || null,
     showSubprocessors: bool(fd, "showSubprocessors"),
     showKnowledge: bool(fd, "showKnowledge"),

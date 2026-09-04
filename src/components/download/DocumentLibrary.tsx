@@ -125,7 +125,7 @@ export function DocumentLibrary({ docs }: { docs: LibraryDoc[] }) {
                 {CATEGORY_LABELS[cat as DocumentCategory]}
                 <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-ink-faint">{items.length}</span>
               </h2>
-              <div className="space-y-2">
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 {items.map((doc) => (
                   <DocRow key={doc.id} doc={doc} checked={checked.has(doc.id)} onToggle={() => toggle(doc.id)} onOpen={() => setSelected(doc)} />
                 ))}
@@ -162,40 +162,38 @@ export function DocumentLibrary({ docs }: { docs: LibraryDoc[] }) {
 function DocRow({ doc, checked, onToggle, onOpen }: { doc: LibraryDoc; checked: boolean; onToggle: () => void; onOpen: () => void }) {
   const isPrivate = doc.visibility === "PRIVATE";
   return (
-    <article className={cn("flex items-center gap-3 rounded-xl border bg-white px-4 py-3 transition hover:shadow-card", checked ? "border-brand-300 ring-1 ring-brand-200" : "border-slate-200 hover:border-brand-200")}>
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={onToggle}
-        className="h-4 w-4 shrink-0 rounded border-slate-300 text-brand-600 focus:ring-brand-400"
-        aria-label={`Select ${doc.title}`}
-      />
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <h3 className="font-medium text-ink">{doc.title}</h3>
-          {isPrivate ? (
-            <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-200"><Lock size={10} /> NDA</span>
-          ) : (
-            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-200"><Globe size={10} /> Public</span>
-          )}
-        </div>
-        {doc.description && <p className="truncate text-sm text-ink-faint">{doc.description}</p>}
-        {(doc.frameworks.length > 0 || doc.industries.length > 0) && (
-          <div className="mt-1 flex flex-wrap gap-1">
-            {[...doc.frameworks, ...doc.industries].slice(0, 4).map((t) => (
-              <span key={t} className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] text-ink-faint">{t}</span>
-            ))}
-          </div>
+    <article className={cn("flex flex-col rounded-xl border bg-white p-4 transition hover:shadow-lift", checked ? "border-brand-300 ring-1 ring-brand-200" : "border-slate-200 hover:border-brand-300")}>
+      <div className="mb-2 flex items-start justify-between gap-2">
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={onToggle}
+          className="mt-1 h-4 w-4 shrink-0 rounded border-slate-300 text-brand-600 focus:ring-brand-400"
+          aria-label={`Select ${doc.title}`}
+        />
+        {isPrivate ? (
+          <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-200"><Lock size={10} /> NDA</span>
+        ) : (
+          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-200"><Globe size={10} /> Public</span>
         )}
       </div>
-      <div className="flex shrink-0 flex-col items-end gap-1">
-        <button onClick={onOpen} className={cn(isPrivate ? "btn-secondary" : "btn-primary")}>
-          <Download size={15} />
-          <span className="hidden sm:inline">{isPrivate ? "Request access" : "Download"}</span>
-        </button>
+      <h3 className="font-semibold text-ink">{doc.title}</h3>
+      {doc.description && <p className="mt-1 line-clamp-2 text-sm text-ink-faint">{doc.description}</p>}
+      {(doc.frameworks.length > 0 || doc.industries.length > 0) && (
+        <div className="mt-2 flex flex-wrap gap-1">
+          {[...doc.frameworks, ...doc.industries].slice(0, 4).map((t) => (
+            <span key={t} className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] text-ink-faint">{t}</span>
+          ))}
+        </div>
+      )}
+      <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
         <span className={cn("text-xs font-semibold", isPrivate ? "text-amber-700" : "text-emerald-700")}>
           {isPrivate ? "NDA required" : "No NDA required"}
         </span>
+        <button onClick={onOpen} className={cn(isPrivate ? "btn-secondary" : "btn-primary", "px-3 py-1.5 text-sm")}>
+          <Download size={15} />
+          {isPrivate ? "Request" : "Download"}
+        </button>
       </div>
     </article>
   );

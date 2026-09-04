@@ -349,6 +349,7 @@ model OrgSettings {
   tagline           String?
   overview          String?  @db.Text
   supportEmail      String?
+  statusPageUrl     String? // external system-status page
   primaryColor      String? // hex, applied as an accent
   showSubprocessors Boolean  @default(true)
   showKnowledge     Boolean  @default(true)

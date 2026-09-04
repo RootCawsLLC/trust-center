@@ -106,14 +106,22 @@ export function TrustTabs({
 }
 
 function Subprocessors({ items }: { items: SubprocessorItem[] }) {
-  if (items.length === 0)
-    return <Empty>No subprocessors listed yet.</Empty>;
+  const [q, setQ] = useState("");
+  if (items.length === 0) return <Empty>No subprocessors listed yet.</Empty>;
+  const filtered = items.filter((s) =>
+    `${s.name} ${s.purpose} ${s.location}`.toLowerCase().includes(q.trim().toLowerCase()),
+  );
   return (
     <div>
-      <p className="mb-4 text-sm text-ink-soft">
-        The third-party service providers we use to deliver our service, and what
-        each is used for.
-      </p>
+      <div className="mb-4 rounded-lg bg-brand-50 p-3.5 text-sm text-ink-soft ring-1 ring-inset ring-brand-200">
+        Due to restrictions from our subprocessors, we can&apos;t share their security
+        documentation directly. Visit each provider&apos;s trust center (linked below)
+        to review or download their information.
+      </div>
+      <div className="relative mb-4 max-w-md">
+        <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+        <input className="input pl-9" placeholder="Search subprocessors…" value={q} onChange={(e) => setQ(e.target.value)} />
+      </div>
       <div className="card overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-wide text-ink-faint">
@@ -121,26 +129,29 @@ function Subprocessors({ items }: { items: SubprocessorItem[] }) {
               <th className="px-4 py-2.5 font-medium">Subprocessor</th>
               <th className="px-4 py-2.5 font-medium">Purpose</th>
               <th className="px-4 py-2.5 font-medium">Location</th>
+              <th className="px-4 py-2.5 font-medium">Trust center</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {items.map((s) => (
+            {filtered.map((s) => (
               <tr key={s.id}>
-                <td className="px-4 py-3 font-medium text-ink">
-                  {s.website ? (
-                    <a href={s.website} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-brand-700 hover:underline">
-                      {s.name} <ExternalLink size={12} />
-                    </a>
-                  ) : (
-                    s.name
-                  )}
-                </td>
+                <td className="px-4 py-3 font-medium text-ink">{s.name}</td>
                 <td className="px-4 py-3 text-ink-soft">{s.purpose}</td>
                 <td className="px-4 py-3 text-ink-soft">{s.location}</td>
+                <td className="px-4 py-3">
+                  {s.website ? (
+                    <a href={s.website} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-medium text-brand-700 hover:underline">
+                      Visit <ExternalLink size={12} />
+                    </a>
+                  ) : (
+                    <span className="text-xs text-ink-faint">—</span>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
+        {filtered.length === 0 && <div className="p-6 text-center text-sm text-ink-faint">No subprocessors match your search.</div>}
       </div>
     </div>
   );
