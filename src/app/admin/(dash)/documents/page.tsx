@@ -3,7 +3,7 @@ import { PageHeader } from "@/components/admin/ui";
 import { FilterBar } from "@/components/admin/FilterBar";
 import { SavedViews } from "@/components/admin/SavedViews";
 import { getSession } from "@/lib/session";
-import { DocumentManager, type AdminDoc } from "./DocumentManager";
+import { DocumentManager, DOC_STATUSES, type AdminDoc } from "./DocumentManager";
 import { CATEGORY_ORDER, CATEGORY_SINGULAR } from "@/lib/constants";
 import { firstStr } from "@/lib/filters";
 import type { Prisma } from "@prisma/client";
@@ -29,8 +29,7 @@ export default async function DocumentsPage({ searchParams }: { searchParams: SP
   }
   if (CATEGORY_ORDER.includes(category as never)) where.category = category as never;
   if (visibility === "PUBLIC" || visibility === "PRIVATE") where.visibility = visibility;
-  if (status === "published") where.isPublished = true;
-  else if (status === "draft") where.isPublished = false;
+  if (status) where.status = status;
 
   const [docs, templates] = await Promise.all([
     prisma.document.findMany({
@@ -62,6 +61,7 @@ export default async function DocumentsPage({ searchParams }: { searchParams: SP
     visibility: d.visibility,
     version: d.version,
     isPublished: d.isPublished,
+    status: d.status,
     fileName: d.fileName,
     sizeBytes: d.sizeBytes,
     ndaTemplateId: d.ndaTemplateId,
@@ -97,10 +97,7 @@ export default async function DocumentsPage({ searchParams }: { searchParams: SP
           {
             key: "status",
             label: "Status",
-            options: [
-              { value: "published", label: "Published" },
-              { value: "draft", label: "Draft" },
-            ],
+            options: DOC_STATUSES.map((s) => ({ value: s, label: s })),
           },
         ]}
       />

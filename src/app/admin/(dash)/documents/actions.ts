@@ -30,7 +30,8 @@ function fieldsFromForm(fd: FormData) {
     category: String(fd.get("category") ?? ""),
     visibility: String(fd.get("visibility") ?? ""),
     version: String(fd.get("version") ?? ""),
-    isPublished: fd.get("isPublished") === "on" || fd.get("isPublished") === "true",
+    status: String(fd.get("status") ?? "Draft"),
+    isPublished: String(fd.get("status") ?? "") === "Published",
     ndaTemplateId: String(fd.get("ndaTemplateId") ?? ""),
   };
 }
@@ -70,6 +71,7 @@ export async function createDocument(fd: FormData): Promise<ActionResult> {
       category: data.category,
       visibility: data.visibility,
       version: data.version || "1.0",
+      status: data.status,
       isPublished: Boolean(data.isPublished),
       ...tagsFromForm(fd),
       ndaTemplateId:
@@ -145,6 +147,7 @@ export async function updateDocument(
       category: data.category,
       visibility: data.visibility,
       version: data.version || existing.version,
+      status: data.status,
       isPublished: Boolean(data.isPublished),
       ...tagsFromForm(fd),
       ndaTemplateId:

@@ -17,6 +17,7 @@ export type AdminDoc = {
   visibility: "PUBLIC" | "PRIVATE";
   version: string;
   isPublished: boolean;
+  status: string;
   fileName: string;
   sizeBytes: number;
   ndaTemplateId: string | null;
@@ -24,6 +25,17 @@ export type AdminDoc = {
   industries: string[];
   regions: string[];
   frameworks: string[];
+};
+
+export const DOC_STATUSES = ["Draft", "In review", "Planning", "Published", "Archived", "Revoked"] as const;
+
+const STATUS_TONE: Record<string, "slate" | "amber" | "emerald" | "red" | "blue"> = {
+  Draft: "slate",
+  "In review": "amber",
+  Planning: "blue",
+  Published: "emerald",
+  Archived: "slate",
+  Revoked: "red",
 };
 
 const CATEGORIES: DocumentCategory[] = [
@@ -115,11 +127,7 @@ export function DocumentManager({
                     )}
                   </td>
                   <td className="px-4 py-3">
-                    {d.isPublished ? (
-                      <Pill tone="emerald">Published</Pill>
-                    ) : (
-                      <Pill tone="slate">Draft</Pill>
-                    )}
+                    <Pill tone={STATUS_TONE[d.status] ?? "slate"}>{d.status}</Pill>
                   </td>
                   <td className="px-4 py-3 text-ink-soft">{d.requestCount}</td>
                   <td className="px-4 py-3">
@@ -321,15 +329,17 @@ function DocumentForm({
               <input name="file" type="file" className="hidden" />
             </label>
           </div>
-          <label className="flex items-center gap-2 text-sm text-ink-soft">
-            <input
-              type="checkbox"
-              name="isPublished"
-              defaultChecked={doc ? doc.isPublished : true}
-              className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-400"
-            />
-            Published (visible on the public site)
-          </label>
+          <div>
+            <label className="label">Status</label>
+            <select name="status" className="input" defaultValue={doc ? doc.status : "Draft"}>
+              {DOC_STATUSES.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-ink-faint">
+              Only <strong>Published</strong> documents appear on the public trust center.
+            </p>
+          </div>
 
           {error && <p className="text-sm text-red-600">{error}</p>}
 

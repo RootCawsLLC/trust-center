@@ -151,24 +151,22 @@ function Subprocessors({ items }: { items: SubprocessorItem[] }) {
               <th className="px-4 py-2.5 font-medium">Subprocessor</th>
               <th className="px-4 py-2.5 font-medium">Purpose</th>
               <th className="px-4 py-2.5 font-medium">Location</th>
-              <th className="px-4 py-2.5 font-medium">Trust center</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {filtered.map((s) => (
               <tr key={s.id}>
-                <td className="px-4 py-3 font-medium text-ink">{s.name}</td>
-                <td className="px-4 py-3 text-ink-soft">{s.purpose}</td>
-                <td className="px-4 py-3 text-ink-soft">{s.location}</td>
-                <td className="px-4 py-3">
+                <td className="px-4 py-3 font-medium text-ink">
                   {s.website ? (
-                    <a href={s.website} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-medium text-brand-700 hover:underline">
-                      Visit <ExternalLink size={12} />
+                    <a href={s.website} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-brand-700 hover:underline" title="Visit their trust center">
+                      {s.name} <ExternalLink size={12} />
                     </a>
                   ) : (
-                    <span className="text-xs text-ink-faint">—</span>
+                    s.name
                   )}
                 </td>
+                <td className="px-4 py-3 text-ink-soft">{s.purpose}</td>
+                <td className="px-4 py-3 text-ink-soft">{s.location}</td>
               </tr>
             ))}
           </tbody>

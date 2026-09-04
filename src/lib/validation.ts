@@ -50,6 +50,7 @@ export const documentSchema = z.object({
   ]),
   visibility: z.enum(["PUBLIC", "PRIVATE"]),
   version: z.string().max(40).optional().or(z.literal("")),
+  status: z.string().max(40).optional(),
   isPublished: z.coerce.boolean().optional(),
   ndaTemplateId: z.string().optional().or(z.literal("")),
 });

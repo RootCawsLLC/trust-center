@@ -129,7 +129,8 @@ model Document {
   mimeType    String
   sizeBytes   Int
   version     String             @default("1.0")
-  isPublished Boolean            @default(false)
+  status      String             @default("Draft") // Draft | In review | Planning | Published | Archived | Revoked
+  isPublished Boolean            @default(false) // derived: status == "Published" (drives public visibility)
 
   // Taxonomy for the customer-facing filters (industry / region / framework).
   industries String[] @default([])
