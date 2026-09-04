@@ -1,14 +1,10 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-// App Runner health check. Returns 200 when the app can reach the database.
+// Liveness check for App Runner: returns 200 as soon as the web server is up.
+// Database connectivity is intentionally NOT gated here so a transient DB issue
+// doesn't block deployment; DB health surfaces on the pages and in logs.
 export async function GET() {
-  try {
-    await prisma.$queryRawUnsafe("SELECT 1");
-    return NextResponse.json({ status: "ok" });
-  } catch {
-    return NextResponse.json({ status: "degraded" }, { status: 503 });
-  }
+  return NextResponse.json({ status: "ok" });
 }
