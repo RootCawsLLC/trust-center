@@ -1,0 +1,63 @@
+# Portable full-stack for local runs / self-hosted UAT — no cloud required.
+#
+#   AUTH_SECRET=$(openssl rand -base64 32) docker compose up --build
+#
+# Then open http://localhost:3000 (admin: admin@trustcenter.local / ChangeMe!Admin123).
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: trustcenter
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d trustcenter"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # One-shot: apply schema, immutability hardening, and seed demo data.
+  migrate:
+    build:
+      context: .
+      target: builder
+    command: >
+      sh -c "npx prisma migrate deploy &&
+             node scripts/apply-immutability.mjs &&
+             node scripts/seed.mjs"
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/trustcenter?schema=public
+      PGDEV_DB: trustcenter
+      STORAGE_DRIVER: local
+      LOCAL_STORAGE_DIR: /app/storage
+    volumes:
+      - storage:/app/storage
+    depends_on:
+      db:
+        condition: service_healthy
+
+  app:
+    build:
+      context: .
+      target: runner
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/trustcenter?schema=public
+      AUTH_SECRET: ${AUTH_SECRET:-change-me-insecure-compose-secret-0123456789}
+      AUTH_TRUST_HOST: "true"
+      APP_URL: http://localhost:3000
+      STORAGE_DRIVER: local
+      LOCAL_STORAGE_DIR: /app/storage
+      COMPANY_NAME: ${COMPANY_NAME:-Acme Corp}
+    volumes:
+      - storage:/app/storage
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+volumes:
+  pgdata:
+  storage:

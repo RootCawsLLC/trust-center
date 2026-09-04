@@ -1,0 +1,13 @@
+node_modules
+.next
+.git
+.pgdata
+storage
+*.log
+.env
+.env*.local
+infra/.terraform
+infra/*.tfstate*
+tests
+.claude
+README.md

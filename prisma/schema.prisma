@@ -1,0 +1,259 @@
+// Trust Center data model.
+//
+// Immutability note: DownloadRequest, NdaAcceptance and AuditLog are the
+// append-only ledger. After creation their rows must never change. This is
+// enforced two ways (see scripts/apply-immutability.mjs):
+//   1. BEFORE UPDATE/DELETE triggers that RAISE EXCEPTION on those tables.
+//   2. A restricted runtime DB role holding INSERT/SELECT only on them.
+// SalesLead and DownloadGrant are deliberately mutable operational tables
+// derived from / supporting the immutable ledger.
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  VIEWER
+}
+
+enum DocumentCategory {
+  POLICY
+  PROCEDURE
+  AUDIT
+  CERTIFICATION
+  REPORT
+  WHITEPAPER
+  OTHER
+}
+
+enum DocumentVisibility {
+  PUBLIC
+  PRIVATE
+}
+
+enum RequesterClass {
+  CUSTOMER
+  LEAD
+}
+
+// ---------------------------------------------------------------------------
+// Auth (Auth.js / NextAuth) — extended with role, passwordHash, isActive.
+// ---------------------------------------------------------------------------
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  role          Role      @default(VIEWER)
+  passwordHash  String? // set for local/credentials admins; null for pure-SSO users
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts  Account[]
+  sessions  Session[]
+  documents Document[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ---------------------------------------------------------------------------
+// Documents & NDA templates (vendor-managed content).
+// ---------------------------------------------------------------------------
+
+model Document {
+  id          String             @id @default(cuid())
+  title       String
+  description String?
+  category    DocumentCategory
+  visibility  DocumentVisibility @default(PRIVATE)
+  storageKey  String // S3 object key (prod) or local relative path (dev)
+  fileName    String
+  mimeType    String
+  sizeBytes   Int
+  version     String             @default("1.0")
+  isPublished Boolean            @default(false)
+
+  ndaTemplateId String? // optional per-document NDA override; else the default template
+  ndaTemplate   NdaTemplate? @relation(fields: [ndaTemplateId], references: [id])
+
+  createdById String?
+  createdBy   User?   @relation(fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  requests DownloadRequest[]
+
+  @@index([visibility])
+  @@index([category])
+  @@index([isPublished])
+}
+
+model NdaTemplate {
+  id           String   @id @default(cuid())
+  name         String
+  bodyMarkdown String   @db.Text // NDA text the vendor pastes or uploads
+  isActive     Boolean  @default(true)
+  isDefault    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  documents   Document[]
+  acceptances NdaAcceptance[]
+}
+
+// ---------------------------------------------------------------------------
+// Salesforce mock (customer directory) + derived sales leads.
+// ---------------------------------------------------------------------------
+
+model MockSalesforceCustomer {
+  id                String   @id @default(cuid())
+  accountName       String
+  primaryDomain     String   @unique
+  additionalDomains String[] // Postgres text[]
+  tier              String // Enterprise | Mid-Market | SMB
+  region            String
+  accountOwner      String
+  createdAt         DateTime @default(now())
+
+  requests DownloadRequest[]
+
+  @@index([primaryDomain])
+}
+
+// Mutable aggregate rebuilt from the immutable ledger for the leads dashboard.
+model SalesLead {
+  id            String   @id @default(cuid())
+  emailDomain   String   @unique
+  firstSeenAt   DateTime @default(now())
+  lastSeenAt    DateTime @default(now())
+  requestCount  Int      @default(0)
+  sampleOrgName String?
+  sampleCountry String?
+}
+
+// ---------------------------------------------------------------------------
+// Immutable ledger: capture, NDA consent, audit.
+// ---------------------------------------------------------------------------
+
+model DownloadRequest {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  documentId         String
+  document           Document           @relation(fields: [documentId], references: [id])
+  documentTitle      String // snapshot at request time
+  documentCategory   DocumentCategory
+  documentVisibility DocumentVisibility
+
+  requesterName  String
+  requesterEmail String
+  emailDomain    String
+  orgName        String
+  country        String
+  ipAddress      String?
+  userAgent      String?
+
+  ndaRequired Boolean
+
+  classification      RequesterClass
+  matchedCustomerId   String?
+  matchedCustomer     MockSalesforceCustomer? @relation(fields: [matchedCustomerId], references: [id])
+  matchedCustomerName String?
+
+  ndaAcceptance NdaAcceptance?
+  grant         DownloadGrant?
+
+  @@index([emailDomain])
+  @@index([createdAt])
+  @@index([classification])
+  @@index([documentId])
+}
+
+model NdaAcceptance {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  downloadRequestId String          @unique
+  downloadRequest   DownloadRequest @relation(fields: [downloadRequestId], references: [id])
+
+  ndaTemplateId   String
+  ndaTemplate     NdaTemplate @relation(fields: [ndaTemplateId], references: [id])
+  ndaTemplateName String // snapshot
+  ndaBodyHash     String // sha256 of exact NDA text accepted
+
+  signerName  String
+  signerEmail String
+  ipAddress   String?
+  userAgent   String?
+}
+
+// Operational (mutable) download grant supporting the immutable request record.
+model DownloadGrant {
+  id                String   @id @default(cuid())
+  token             String   @unique
+  downloadRequestId String   @unique
+  downloadRequest   DownloadRequest @relation(fields: [downloadRequestId], references: [id])
+  createdAt         DateTime @default(now())
+  expiresAt         DateTime
+  usedAt            DateTime?
+  downloadCount     Int      @default(0)
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  createdAt  DateTime @default(now())
+  actorUserId String?
+  actorEmail String?
+  action     String // DOCUMENT_CREATE, DOCUMENT_PUBLISH, USER_INVITE, LOGIN, DOWNLOAD_REQUEST, NDA_ACCEPT, ...
+  targetType String?
+  targetId   String?
+  metadata   Json?
+  ipAddress  String?
+
+  @@index([createdAt])
+  @@index([action])
+}

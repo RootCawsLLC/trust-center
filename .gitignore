@@ -1,0 +1,33 @@
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# next.js
+/.next/
+/out/
+next-env.d.ts
+
+# production
+/build
+
+# local database (embedded-postgres) + uploaded blobs
+/.pgdata/
+/storage/
+
+# env
+.env
+.env*.local
+
+# secrets / terraform state
+*.tfstate
+*.tfstate.*
+.terraform/
+*.tfvars
+!example.tfvars
+
+# misc
+.DS_Store
+*.pem
+npm-debug.log*
+/coverage
