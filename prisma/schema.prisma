@@ -373,3 +373,46 @@ model Certification {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
+
+// Risk profile: key security facts (RTO, RPO, encryption, ...). Only put here what
+// isn't already obvious in the KB/RACI, to avoid duplication.
+model RiskProfileItem {
+  id          String   @id @default(cuid())
+  category    String   @default("General")
+  label       String
+  value       String
+  sortOrder   Int      @default(0)
+  isPublished Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Shared responsibility / RACI: who owns each control area.
+model RaciItem {
+  id          String   @id @default(cuid())
+  area        String
+  corporate   String   @default("")
+  product     String   @default("")
+  customer    String   @default("")
+  note        String?
+  sortOrder   Int      @default(0)
+  isPublished Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Compliance calendar: planned audit windows / expected releases (free-text window
+// keeps it flexible, e.g. "March – October (annual)" or "Expected Q3 2026").
+model ComplianceEvent {
+  id          String   @id @default(cuid())
+  title       String
+  detail      String?
+  framework   String?
+  product     String?
+  window      String
+  status      String   @default("planned") // planned | in-progress | complete
+  sortOrder   Int      @default(0)
+  isPublished Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

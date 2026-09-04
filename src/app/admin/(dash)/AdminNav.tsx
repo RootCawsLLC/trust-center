@@ -19,6 +19,9 @@ import {
   Megaphone,
   BarChart3,
   Award,
+  Gauge,
+  SplitSquareHorizontal,
+  CalendarDays,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -27,6 +30,9 @@ const NAV = [
   { href: "/admin/metrics", label: "Metrics", icon: BarChart3 },
   { href: "/admin/documents", label: "Documents", icon: FileText },
   { href: "/admin/certifications", label: "Certifications", icon: Award },
+  { href: "/admin/risk-profile", label: "Risk profile", icon: Gauge },
+  { href: "/admin/shared-responsibility", label: "Shared responsibility", icon: SplitSquareHorizontal },
+  { href: "/admin/compliance-calendar", label: "Compliance calendar", icon: CalendarDays },
   { href: "/admin/requests", label: "Requests", icon: Inbox },
   { href: "/admin/leads", label: "Sales leads", icon: Target },
   { href: "/admin/nda", label: "NDA templates", icon: FileSignature },

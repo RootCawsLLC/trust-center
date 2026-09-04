@@ -1,9 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { FileText, Network, BookOpen, Megaphone, Search, ExternalLink, ChevronDown } from "lucide-react";
+import { FileText, Network, BookOpen, Megaphone, Search, ExternalLink, ChevronDown, Gauge, SplitSquareHorizontal, CalendarDays } from "lucide-react";
 import { DocumentLibrary, type LibraryDoc } from "./DocumentLibrary";
 import { cn } from "@/lib/utils";
+
+export type RiskItem = { id: string; category: string; label: string; value: string };
+export type RaciRow = { id: string; area: string; corporate: string; product: string; customer: string; note: string | null };
+export type CalendarEvent = { id: string; title: string; detail: string | null; framework: string | null; product: string | null; window: string; status: string };
 
 export type SubprocessorItem = {
   id: string;
@@ -32,6 +36,9 @@ export type UpdateItem = {
 
 const TABS = [
   { key: "documents", label: "Documents", icon: FileText },
+  { key: "risk", label: "Risk profile", icon: Gauge },
+  { key: "responsibility", label: "Shared responsibility", icon: SplitSquareHorizontal },
+  { key: "calendar", label: "Compliance calendar", icon: CalendarDays },
   { key: "subprocessors", label: "Subprocessors", icon: Network },
   { key: "knowledge", label: "Knowledge base", icon: BookOpen },
   { key: "updates", label: "Updates", icon: Megaphone },
@@ -42,6 +49,9 @@ export function TrustTabs({
   subprocessors,
   articles,
   updates,
+  riskItems = [],
+  raciItems = [],
+  events = [],
   showSubprocessors = true,
   showKnowledge = true,
   showUpdates = true,
@@ -50,12 +60,18 @@ export function TrustTabs({
   subprocessors: SubprocessorItem[];
   articles: ArticleItem[];
   updates: UpdateItem[];
+  riskItems?: RiskItem[];
+  raciItems?: RaciRow[];
+  events?: CalendarEvent[];
   showSubprocessors?: boolean;
   showKnowledge?: boolean;
   showUpdates?: boolean;
 }) {
   const visible: Record<string, boolean> = {
     documents: true,
+    risk: riskItems.length > 0,
+    responsibility: raciItems.length > 0,
+    calendar: events.length > 0,
     subprocessors: showSubprocessors,
     knowledge: showKnowledge,
     updates: showUpdates,
@@ -65,6 +81,9 @@ export function TrustTabs({
 
   const counts: Record<string, number> = {
     documents: docs.length,
+    risk: riskItems.length,
+    responsibility: raciItems.length,
+    calendar: events.length,
     subprocessors: subprocessors.length,
     knowledge: articles.length,
     updates: updates.length,
@@ -98,6 +117,9 @@ export function TrustTabs({
       </div>
 
       {tab === "documents" && <DocumentLibrary docs={docs} />}
+      {tab === "risk" && <RiskProfile items={riskItems} />}
+      {tab === "responsibility" && <SharedResponsibility items={raciItems} />}
+      {tab === "calendar" && <Calendar items={events} />}
       {tab === "subprocessors" && <Subprocessors items={subprocessors} />}
       {tab === "knowledge" && <Knowledge items={articles} />}
       {tab === "updates" && <Updates items={updates} />}
@@ -247,6 +269,122 @@ function Updates({ items }: { items: UpdateItem[] }) {
           ) : (
             <p className="mt-1 whitespace-pre-wrap text-sm text-ink-soft">{u.bodyMarkdown}</p>
           )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function RiskProfile({ items }: { items: RiskItem[] }) {
+  if (!items.length) return <Empty>No risk profile published yet.</Empty>;
+  const cats = [...new Set(items.map((i) => i.category))];
+  return (
+    <div className="space-y-6">
+      <p className="text-sm text-ink-soft">
+        Common answers to security-review questions. See the knowledge base and
+        shared-responsibility matrix for more detail.
+      </p>
+      {cats.map((cat) => (
+        <section key={cat}>
+          <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-faint">{cat}</h3>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {items
+              .filter((i) => i.category === cat)
+              .map((i) => (
+                <div key={i.id} className="card p-4">
+                  <div className="text-sm text-ink-faint">{i.label}</div>
+                  <div className="mt-1 text-lg font-semibold text-ink">{i.value}</div>
+                </div>
+              ))}
+          </div>
+        </section>
+      ))}
+    </div>
+  );
+}
+
+function RaciChip({ v }: { v: string }) {
+  if (!v) return <span className="text-ink-faint">—</span>;
+  const tone =
+    /^R/i.test(v) ? "bg-brand-50 text-brand-700 ring-brand-200"
+    : /^A/i.test(v) ? "bg-emerald-50 text-emerald-700 ring-emerald-200"
+    : /^C/i.test(v) ? "bg-amber-50 text-amber-700 ring-amber-200"
+    : /^I/i.test(v) ? "bg-slate-100 text-slate-700 ring-slate-200"
+    : "";
+  return tone ? (
+    <span className={cn("inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ring-1 ring-inset", tone)}>{v}</span>
+  ) : (
+    <span className="text-ink-soft">{v}</span>
+  );
+}
+
+function SharedResponsibility({ items }: { items: RaciRow[] }) {
+  if (!items.length) return <Empty>No shared-responsibility matrix yet.</Empty>;
+  return (
+    <div>
+      <p className="mb-4 text-sm text-ink-soft">
+        Who owns each control area across our corporate program, the product, and you
+        as the customer. (R = Responsible, A = Accountable, C = Consulted, I = Informed.)
+      </p>
+      <div className="card overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-wide text-ink-faint">
+            <tr>
+              <th className="px-4 py-2.5 font-medium">Control area</th>
+              <th className="px-4 py-2.5 font-medium">Corporate</th>
+              <th className="px-4 py-2.5 font-medium">Product</th>
+              <th className="px-4 py-2.5 font-medium">Customer</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {items.map((r) => (
+              <tr key={r.id} className="align-top">
+                <td className="px-4 py-3">
+                  <div className="font-medium text-ink">{r.area}</div>
+                  {r.note && <div className="text-xs text-ink-faint">{r.note}</div>}
+                </td>
+                <td className="px-4 py-3"><RaciChip v={r.corporate} /></td>
+                <td className="px-4 py-3"><RaciChip v={r.product} /></td>
+                <td className="px-4 py-3"><RaciChip v={r.customer} /></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function Calendar({ items }: { items: CalendarEvent[] }) {
+  if (!items.length) return <Empty>No compliance calendar yet.</Empty>;
+  const tone: Record<string, string> = {
+    planned: "bg-slate-100 text-slate-700 ring-slate-200",
+    "in-progress": "bg-amber-50 text-amber-700 ring-amber-200",
+    complete: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+  };
+  return (
+    <div className="space-y-3">
+      {items.map((e) => (
+        <div key={e.id} className="card flex items-start gap-4 p-4">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
+            <CalendarDays size={18} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="font-semibold text-ink">{e.title}</h3>
+              <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium capitalize ring-1 ring-inset", tone[e.status] ?? tone.planned)}>
+                {e.status.replace("-", " ")}
+              </span>
+            </div>
+            {e.detail && <p className="mt-0.5 text-sm text-ink-soft">{e.detail}</p>}
+            {(e.framework || e.product) && (
+              <div className="mt-1 flex flex-wrap gap-2 text-xs text-ink-faint">
+                {e.framework && <span className="rounded bg-slate-100 px-1.5 py-0.5">{e.framework}</span>}
+                {e.product && <span className="rounded bg-slate-100 px-1.5 py-0.5">{e.product}</span>}
+              </div>
+            )}
+          </div>
+          <div className="shrink-0 text-right text-sm font-medium text-ink">{e.window}</div>
         </div>
       ))}
     </div>

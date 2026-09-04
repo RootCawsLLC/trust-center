@@ -258,6 +258,103 @@ export async function deleteCertification(id: string): Promise<ActionResult> {
   return { ok: true };
 }
 
+// ---- Risk profile ----
+export async function saveRiskItem(id: string | null, fd: FormData): Promise<ActionResult> {
+  const g = await guard();
+  if (g instanceof Error) return { ok: false, error: g.message };
+  const label = s(fd, "label");
+  const value = s(fd, "value");
+  if (!label || !value) return { ok: false, error: "Label and value are required." };
+  const data = {
+    category: s(fd, "category") || "General",
+    label,
+    value,
+    sortOrder: num(fd, "sortOrder"),
+    isPublished: fd.has("isPublished") ? bool(fd, "isPublished") : true,
+  };
+  if (id) await prisma.riskProfileItem.update({ where: { id }, data });
+  else await prisma.riskProfileItem.create({ data });
+  await logAudit({ action: id ? "RISK_UPDATE" : "RISK_CREATE", actorUserId: g.user.id, actorEmail: g.user.email, targetType: "RiskProfileItem", targetId: id ?? undefined, metadata: { label } });
+  revalidatePath("/admin/risk-profile");
+  revalidatePath("/");
+  return { ok: true };
+}
+export async function deleteRiskItem(id: string): Promise<ActionResult> {
+  const g = await guard();
+  if (g instanceof Error) return { ok: false, error: g.message };
+  await prisma.riskProfileItem.delete({ where: { id } });
+  await logAudit({ action: "RISK_DELETE", actorUserId: g.user.id, actorEmail: g.user.email, targetType: "RiskProfileItem", targetId: id });
+  revalidatePath("/admin/risk-profile");
+  revalidatePath("/");
+  return { ok: true };
+}
+
+// ---- Shared responsibility / RACI ----
+export async function saveRaci(id: string | null, fd: FormData): Promise<ActionResult> {
+  const g = await guard();
+  if (g instanceof Error) return { ok: false, error: g.message };
+  const area = s(fd, "area");
+  if (!area) return { ok: false, error: "Responsibility area is required." };
+  const data = {
+    area,
+    corporate: s(fd, "corporate"),
+    product: s(fd, "product"),
+    customer: s(fd, "customer"),
+    note: s(fd, "note") || null,
+    sortOrder: num(fd, "sortOrder"),
+    isPublished: fd.has("isPublished") ? bool(fd, "isPublished") : true,
+  };
+  if (id) await prisma.raciItem.update({ where: { id }, data });
+  else await prisma.raciItem.create({ data });
+  await logAudit({ action: id ? "RACI_UPDATE" : "RACI_CREATE", actorUserId: g.user.id, actorEmail: g.user.email, targetType: "RaciItem", targetId: id ?? undefined, metadata: { area } });
+  revalidatePath("/admin/shared-responsibility");
+  revalidatePath("/");
+  return { ok: true };
+}
+export async function deleteRaci(id: string): Promise<ActionResult> {
+  const g = await guard();
+  if (g instanceof Error) return { ok: false, error: g.message };
+  await prisma.raciItem.delete({ where: { id } });
+  await logAudit({ action: "RACI_DELETE", actorUserId: g.user.id, actorEmail: g.user.email, targetType: "RaciItem", targetId: id });
+  revalidatePath("/admin/shared-responsibility");
+  revalidatePath("/");
+  return { ok: true };
+}
+
+// ---- Compliance calendar ----
+export async function saveEvent(id: string | null, fd: FormData): Promise<ActionResult> {
+  const g = await guard();
+  if (g instanceof Error) return { ok: false, error: g.message };
+  const title = s(fd, "title");
+  const window = s(fd, "window");
+  if (!title || !window) return { ok: false, error: "Title and window are required." };
+  const data = {
+    title,
+    detail: s(fd, "detail") || null,
+    framework: s(fd, "framework") || null,
+    product: s(fd, "product") || null,
+    window,
+    status: s(fd, "status") || "planned",
+    sortOrder: num(fd, "sortOrder"),
+    isPublished: fd.has("isPublished") ? bool(fd, "isPublished") : true,
+  };
+  if (id) await prisma.complianceEvent.update({ where: { id }, data });
+  else await prisma.complianceEvent.create({ data });
+  await logAudit({ action: id ? "EVENT_UPDATE" : "EVENT_CREATE", actorUserId: g.user.id, actorEmail: g.user.email, targetType: "ComplianceEvent", targetId: id ?? undefined, metadata: { title } });
+  revalidatePath("/admin/compliance-calendar");
+  revalidatePath("/");
+  return { ok: true };
+}
+export async function deleteEvent(id: string): Promise<ActionResult> {
+  const g = await guard();
+  if (g instanceof Error) return { ok: false, error: g.message };
+  await prisma.complianceEvent.delete({ where: { id } });
+  await logAudit({ action: "EVENT_DELETE", actorUserId: g.user.id, actorEmail: g.user.email, targetType: "ComplianceEvent", targetId: id });
+  revalidatePath("/admin/compliance-calendar");
+  revalidatePath("/");
+  return { ok: true };
+}
+
 // ---- Knowledge base ----
 export async function saveArticle(id: string | null, fd: FormData): Promise<ActionResult> {
   const g = await guard();

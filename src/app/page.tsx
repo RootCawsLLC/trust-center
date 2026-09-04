@@ -13,7 +13,7 @@ function uniqueSorted(v: string[]) {
 }
 
 export default async function HomePage() {
-  const [settings, docs, subprocessors, articles, updates] = await Promise.all([
+  const [settings, docs, subprocessors, articles, updates, riskItems, raciItems, events] = await Promise.all([
     getOrgSettings(),
     prisma.document.findMany({
       where: { isPublished: true },
@@ -22,6 +22,9 @@ export default async function HomePage() {
     prisma.subprocessor.findMany({ where: { isActive: true }, orderBy: { sortOrder: "asc" } }),
     prisma.knowledgeArticle.findMany({ where: { isPublished: true }, orderBy: { sortOrder: "asc" } }),
     prisma.trustUpdate.findMany({ where: { isPublished: true }, orderBy: { publishedAt: "desc" } }),
+    prisma.riskProfileItem.findMany({ where: { isPublished: true }, orderBy: { sortOrder: "asc" } }),
+    prisma.raciItem.findMany({ where: { isPublished: true }, orderBy: { sortOrder: "asc" } }),
+    prisma.complianceEvent.findMany({ where: { isPublished: true }, orderBy: { sortOrder: "asc" } }),
   ]);
 
   const libraryDocs: LibraryDoc[] = docs.map((d) => ({
@@ -137,6 +140,9 @@ export default async function HomePage() {
             type: u.type,
             publishedAt: u.publishedAt.toISOString(),
           }))}
+          riskItems={riskItems.map((r) => ({ id: r.id, category: r.category, label: r.label, value: r.value }))}
+          raciItems={raciItems.map((r) => ({ id: r.id, area: r.area, corporate: r.corporate, product: r.product, customer: r.customer, note: r.note }))}
+          events={events.map((e) => ({ id: e.id, title: e.title, detail: e.detail, framework: e.framework, product: e.product, window: e.window, status: e.status }))}
         />
       </main>
 
