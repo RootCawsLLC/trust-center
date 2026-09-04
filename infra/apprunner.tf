@@ -28,6 +28,10 @@ resource "aws_apprunner_service" "app" {
           AUTH_TRUST_HOST = "true"
           NODE_ENV        = "production"
           DEMO_MODE       = tostring(var.demo_mode)
+          # Demo one-click login uses the read-only Viewer, so shared visitors
+          # can explore the backend without altering the sample content.
+          DEMO_EMAIL    = "viewer@trustcenter.local"
+          DEMO_PASSWORD = "ChangeMe!Viewer123"
           # Make Next's standalone server bind all interfaces (else it inherits
           # the container hostname and App Runner health checks can't reach it).
           HOSTNAME = "0.0.0.0"

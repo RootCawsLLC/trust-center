@@ -13,6 +13,7 @@ import {
   ScrollText,
   Settings,
   LogOut,
+  ExternalLink,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -68,6 +69,16 @@ export function AdminNav({
           );
         })}
       </nav>
+      <div className="px-2 pb-2">
+        <a
+          href="/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2.5 rounded-lg border border-dashed border-slate-300 px-3 py-2 text-sm font-medium text-ink-soft transition hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700"
+        >
+          <ExternalLink size={16} /> External view
+        </a>
+      </div>
       <div className="border-t border-slate-200 p-3">
         <div className="mb-2 px-1">
           <p className="truncate text-sm font-medium text-ink">{name ?? email}</p>

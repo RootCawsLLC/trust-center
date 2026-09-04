@@ -1,20 +1,46 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { PageHeader, ClassBadge, Pill } from "@/components/admin/ui";
+import { FilterBar } from "@/components/admin/FilterBar";
 import { formatDate } from "@/lib/utils";
+import { dateRangeWhere, firstStr } from "@/lib/filters";
 import { Lock, ShieldCheck } from "lucide-react";
 import type { Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
-export default async function RequestsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ type?: string }>;
-}) {
-  const { type } = await searchParams;
+type SP = Promise<Record<string, string | string[] | undefined>>;
+
+export default async function RequestsPage({ searchParams }: { searchParams: SP }) {
+  const sp = await searchParams;
+  const q = firstStr(sp.q)?.trim();
+  const type = firstStr(sp.type);
+  const nda = firstStr(sp.nda);
+  const from = firstStr(sp.from);
+  const to = firstStr(sp.to);
+
   const where: Prisma.DownloadRequestWhereInput = {};
   if (type === "CUSTOMER" || type === "LEAD") where.classification = type;
+  if (q) {
+    where.OR = [
+      { requesterName: { contains: q, mode: "insensitive" } },
+      { requesterEmail: { contains: q, mode: "insensitive" } },
+      { orgName: { contains: q, mode: "insensitive" } },
+      { emailDomain: { contains: q, mode: "insensitive" } },
+      { documentTitle: { contains: q, mode: "insensitive" } },
+    ];
+  }
+  if (nda === "accepted") {
+    where.ndaRequired = true;
+    where.ndaAcceptance = { isNot: null };
+  } else if (nda === "pending") {
+    where.ndaRequired = true;
+    where.ndaAcceptance = { is: null };
+  } else if (nda === "none") {
+    where.ndaRequired = false;
+  }
+  const createdAt = dateRangeWhere(from, to);
+  if (createdAt) where.createdAt = createdAt;
 
   const requests = await prisma.downloadRequest.findMany({
     where,
@@ -23,12 +49,6 @@ export default async function RequestsPage({
     take: 500,
   });
 
-  const filters = [
-    { key: undefined, label: "All" },
-    { key: "CUSTOMER", label: "Customers" },
-    { key: "LEAD", label: "Leads" },
-  ];
-
   return (
     <div>
       <PageHeader
@@ -36,32 +56,41 @@ export default async function RequestsPage({
         description="Every document request, captured to an append-only ledger."
       />
 
-      <div className="mb-4 flex items-center gap-4">
-        <div className="flex gap-1 rounded-lg bg-slate-100 p-1">
-          {filters.map((f) => {
-            const active = (f.key ?? undefined) === (type ?? undefined);
-            return (
-              <Link
-                key={f.label}
-                href={f.key ? `/admin/requests?type=${f.key}` : "/admin/requests"}
-                className={`rounded-md px-3 py-1 text-sm font-medium transition ${
-                  active ? "bg-white text-ink shadow-sm" : "text-ink-faint hover:text-ink"
-                }`}
-              >
-                {f.label}
-              </Link>
-            );
-          })}
-        </div>
+      <FilterBar
+        searchPlaceholder="Search name, email, org, domain, document…"
+        showDateRange
+        selects={[
+          {
+            key: "type",
+            label: "Type",
+            options: [
+              { value: "CUSTOMER", label: "Customers" },
+              { value: "LEAD", label: "Leads" },
+            ],
+          },
+          {
+            key: "nda",
+            label: "NDA",
+            options: [
+              { value: "accepted", label: "Accepted" },
+              { value: "pending", label: "Pending" },
+              { value: "none", label: "Not required" },
+            ],
+          },
+        ]}
+      />
+
+      <div className="mb-3 flex items-center justify-between">
+        <span className="text-sm text-ink-faint">{requests.length} request(s)</span>
         <span className="inline-flex items-center gap-1.5 text-xs text-ink-faint">
-          <ShieldCheck size={13} className="text-emerald-600" /> Immutable —
-          records cannot be edited or deleted
+          <ShieldCheck size={13} className="text-emerald-600" /> Immutable — cannot
+          be edited or deleted
         </span>
       </div>
 
       {requests.length === 0 ? (
         <div className="card p-8 text-center text-sm text-ink-faint">
-          No requests match this filter.
+          No requests match these filters.
         </div>
       ) : (
         <div className="card overflow-x-auto">
@@ -80,14 +109,23 @@ export default async function RequestsPage({
               {requests.map((r) => (
                 <tr key={r.id} className="align-top">
                   <td className="px-4 py-3">
-                    <div className="font-medium text-ink">{r.requesterName}</div>
+                    <Link
+                      href={`/admin/people/${encodeURIComponent(r.requesterEmail)}`}
+                      className="font-medium text-brand-700 hover:underline"
+                    >
+                      {r.requesterName}
+                    </Link>
                     <div className="text-xs text-ink-faint">{r.requesterEmail}</div>
                   </td>
                   <td className="px-4 py-3">
                     <div className="text-ink-soft">{r.orgName}</div>
-                    <div className="text-xs text-ink-faint">
-                      {r.emailDomain} · {r.country}
-                    </div>
+                    <Link
+                      href={`/admin/companies/${encodeURIComponent(r.emailDomain)}`}
+                      className="text-xs text-brand-700 hover:underline"
+                    >
+                      {r.emailDomain}
+                    </Link>
+                    <span className="text-xs text-ink-faint"> · {r.country}</span>
                     {r.matchedCustomerName && (
                       <div className="mt-1 text-xs text-emerald-700">
                         ↳ {r.matchedCustomerName}

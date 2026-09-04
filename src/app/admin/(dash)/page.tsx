@@ -35,14 +35,24 @@ export default async function DashboardPage() {
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Total requests" value={totalRequests} />
+        <StatCard label="Total requests" value={totalRequests} href="/admin/requests" />
         <StatCard
           label="Customer requests"
           value={customerRequests}
           hint="Matched to Salesforce"
+          href="/admin/requests?type=CUSTOMER"
         />
-        <StatCard label="Sales leads" value={leads} hint="Unique lead domains" />
-        <StatCard label="NDAs accepted" value={ndaAcceptances} />
+        <StatCard
+          label="Sales leads"
+          value={leads}
+          hint="Unique lead domains"
+          href="/admin/leads"
+        />
+        <StatCard
+          label="NDAs accepted"
+          value={ndaAcceptances}
+          href="/admin/requests?nda=accepted"
+        />
       </div>
 
       <div className="mt-8">
@@ -71,7 +81,12 @@ export default async function DashboardPage() {
                 {recent.map((r) => (
                   <tr key={r.id}>
                     <td className="px-4 py-3">
-                      <div className="font-medium text-ink">{r.requesterName}</div>
+                      <Link
+                        href={`/admin/people/${encodeURIComponent(r.requesterEmail)}`}
+                        className="font-medium text-brand-700 hover:underline"
+                      >
+                        {r.requesterName}
+                      </Link>
                       <div className="text-xs text-ink-faint">{r.requesterEmail}</div>
                     </td>
                     <td className="px-4 py-3 text-ink-soft">{r.documentTitle}</td>

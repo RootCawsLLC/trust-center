@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 export function PageHeader({
@@ -24,18 +25,31 @@ export function StatCard({
   label,
   value,
   hint,
+  href,
 }: {
   label: string;
   value: React.ReactNode;
   hint?: string;
+  href?: string;
 }) {
-  return (
-    <div className="card p-5">
+  const inner = (
+    <>
       <div className="text-sm text-ink-faint">{label}</div>
       <div className="mt-1 text-3xl font-bold text-ink">{value}</div>
       {hint && <div className="mt-1 text-xs text-ink-faint">{hint}</div>}
-    </div>
+    </>
   );
+  if (href) {
+    return (
+      <Link
+        href={href}
+        className="card block p-5 transition hover:border-brand-200 hover:shadow-lift"
+      >
+        {inner}
+      </Link>
+    );
+  }
+  return <div className="card p-5">{inner}</div>;
 }
 
 export function ClassBadge({ value }: { value: "CUSTOMER" | "LEAD" }) {
@@ -58,13 +72,14 @@ export function Pill({
   tone = "slate",
 }: {
   children: React.ReactNode;
-  tone?: "slate" | "amber" | "emerald" | "red";
+  tone?: "slate" | "amber" | "emerald" | "red" | "blue";
 }) {
   const tones = {
     slate: "bg-slate-100 text-slate-700 ring-slate-200",
     amber: "bg-amber-50 text-amber-700 ring-amber-200",
     emerald: "bg-emerald-50 text-emerald-700 ring-emerald-200",
     red: "bg-red-50 text-red-700 ring-red-200",
+    blue: "bg-blue-50 text-blue-700 ring-blue-200",
   };
   return (
     <span
