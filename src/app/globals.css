@@ -4,6 +4,32 @@
 
 :root {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  /* ---------------------------------------------------------------------
+   * Brand palette (RGB triples). To rebrand a fork, change ONLY these lines
+   * — every button, link, badge and accent follows. Defaults are the GRC
+   * brand family (mauve/burgundy + warm neutrals + sage).
+   * ------------------------------------------------------------------- */
+  --brand-50: 247 235 237;
+  --brand-100: 244 220 223;
+  --brand-200: 234 197 203;
+  --brand-300: 214 160 168;
+  --brand-400: 190 124 133;
+  --brand-500: 165 97 106;
+  --brand-600: 141 88 96;
+  --brand-700: 116 60 68;
+  --brand-800: 110 39 39;
+  --brand-900: 74 34 37;
+  --brand-950: 42 33 36;
+
+  --sage: 76 115 89;
+  --sage-soft: 226 238 230;
+
+  --ink: 58 51 54;
+  --ink-soft: 92 82 86;
+  --ink-faint: 122 112 115;
+
+  --paper: 250 246 246;
 }
 
 html {
@@ -11,7 +37,7 @@ html {
 }
 
 body {
-  @apply bg-slate-50 text-ink antialiased;
+  @apply bg-paper text-ink antialiased;
 }
 
 /* Subtle grid backdrop for hero sections. */

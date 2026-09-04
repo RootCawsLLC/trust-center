@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { ShieldCheck } from "lucide-react";
+import { slugify } from "@/lib/utils";
 
 // Polished, styled badges (not official trademarked logos). Per-framework color
 // and a short mark, rendered as circular medallions like a typical trust center.
@@ -25,16 +27,22 @@ export function CertBadge({ name }: { name: string }) {
     short: name.slice(0, 6),
   };
   return (
-    <div className="flex w-20 flex-col items-center gap-1.5" title={name}>
+    <Link
+      href={`/cert/${slugify(name)}`}
+      className="group flex w-20 flex-col items-center gap-1.5"
+      title={`${name} — learn more`}
+    >
       <div
-        className={`flex h-16 w-16 flex-col items-center justify-center rounded-full text-center ring-2 ${s.ring}`}
+        className={`flex h-16 w-16 flex-col items-center justify-center rounded-full text-center ring-2 transition group-hover:scale-105 group-hover:shadow-lift ${s.ring}`}
       >
         <ShieldCheck size={14} className={s.text} />
         <span className={`whitespace-pre-line text-[10px] font-bold leading-tight ${s.text}`}>
           {s.short}
         </span>
       </div>
-      <span className="text-center text-[11px] font-medium leading-tight text-ink">{name}</span>
-    </div>
+      <span className="text-center text-[11px] font-medium leading-tight text-ink group-hover:text-brand-700">
+        {name}
+      </span>
+    </Link>
   );
 }

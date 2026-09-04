@@ -73,7 +73,10 @@ export default async function HomePage() {
           {badges.length > 0 && (
             <div className="mt-7">
               <div className="mb-2 text-xs font-medium uppercase tracking-wide text-ink-faint">
-                Certifications &amp; attestations
+                Certifications &amp; attestations{" "}
+                <span className="font-normal normal-case text-ink-faint/80">
+                  (click a badge below to learn more)
+                </span>
               </div>
               <div className="flex flex-wrap gap-4">
                 {badges.map((b) => (

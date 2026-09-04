@@ -357,3 +357,18 @@ model OrgSettings {
   retentionNote     String?  @db.Text
   updatedAt         DateTime @updatedAt
 }
+
+// Per-certification detail page content (how we comply, products in scope).
+model Certification {
+  id              String   @id @default(cuid())
+  framework       String   @unique // matches Document.frameworks entries, e.g. "SOC 2"
+  slug            String   @unique
+  displayName     String
+  summaryHtml     String?  @db.Text // sanitized rich text
+  status          String   @default("Certified") // Certified | In progress | Planned
+  productsInScope String[] @default([])
+  isPublished     Boolean  @default(true)
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}

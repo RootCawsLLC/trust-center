@@ -204,6 +204,60 @@ export async function importSubprocessors(rows: ParsedSub[]): Promise<ActionResu
   return { ok: true };
 }
 
+// ---- Certifications (badge detail pages) ----
+function slugify(s: string) {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+}
+
+export async function saveCertification(id: string | null, fd: FormData): Promise<ActionResult> {
+  const g = await guard();
+  if (g instanceof Error) return { ok: false, error: g.message };
+  const framework = s(fd, "framework");
+  if (!framework) return { ok: false, error: "Framework name is required (e.g. SOC 2)." };
+  const summaryHtml = sanitizeRichText(s(fd, "summaryHtml"));
+  const productsInScope = s(fd, "productsInScope")
+    .split(",")
+    .map((p) => p.trim())
+    .filter(Boolean);
+  const data = {
+    framework,
+    slug: slugify(framework),
+    displayName: s(fd, "displayName") || framework,
+    summaryHtml: summaryHtml || null,
+    status: s(fd, "status") || "Certified",
+    productsInScope,
+    sortOrder: num(fd, "sortOrder"),
+    isPublished: fd.has("isPublished") ? bool(fd, "isPublished") : true,
+  };
+  try {
+    if (id) await prisma.certification.update({ where: { id }, data });
+    else await prisma.certification.create({ data });
+  } catch {
+    return { ok: false, error: "A certification with that framework already exists." };
+  }
+  await logAudit({
+    action: id ? "CERT_UPDATE" : "CERT_CREATE",
+    actorUserId: g.user.id,
+    actorEmail: g.user.email,
+    targetType: "Certification",
+    targetId: id ?? undefined,
+    metadata: { framework },
+  });
+  revalidatePath("/admin/certifications");
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function deleteCertification(id: string): Promise<ActionResult> {
+  const g = await guard();
+  if (g instanceof Error) return { ok: false, error: g.message };
+  await prisma.certification.delete({ where: { id } });
+  await logAudit({ action: "CERT_DELETE", actorUserId: g.user.id, actorEmail: g.user.email, targetType: "Certification", targetId: id });
+  revalidatePath("/admin/certifications");
+  revalidatePath("/");
+  return { ok: true };
+}
+
 // ---- Knowledge base ----
 export async function saveArticle(id: string | null, fd: FormData): Promise<ActionResult> {
   const g = await guard();

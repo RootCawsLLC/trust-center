@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Lock, Globe, Download, FileText, Search, X, SlidersHorizontal, Package, DownloadCloud } from "lucide-react";
+import { Lock, Globe, Download, Search, X, SlidersHorizontal, Package, DownloadCloud } from "lucide-react";
 import { DownloadModal, type PublicDoc } from "./DownloadModal";
 import { BulkDownloadModal } from "./BulkDownloadModal";
 import { CATEGORY_LABELS, CATEGORY_ORDER } from "@/lib/constants";
@@ -170,9 +170,6 @@ function DocRow({ doc, checked, onToggle, onOpen }: { doc: LibraryDoc; checked: 
         className="h-4 w-4 shrink-0 rounded border-slate-300 text-brand-600 focus:ring-brand-400"
         aria-label={`Select ${doc.title}`}
       />
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-ink-soft">
-        <FileText size={17} />
-      </div>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <h3 className="font-medium text-ink">{doc.title}</h3>
