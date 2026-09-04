@@ -14,3 +14,18 @@ export function firstStr(v: string | string[] | undefined): string | undefined {
   if (Array.isArray(v)) return v[0];
   return v;
 }
+
+// Build a Prisma orderBy from ?sort=&dir= params, restricted to an allowlist.
+// Returns `any` because the key is dynamic; the allowlist keeps it safe.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function orderByFromParams(
+  sort: string | undefined,
+  dir: string | undefined,
+  allowed: readonly string[],
+  fallback: Record<string, "asc" | "desc">,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+): any {
+  const d: "asc" | "desc" = dir === "desc" ? "desc" : "asc";
+  if (sort && allowed.includes(sort)) return { [sort]: d };
+  return fallback;
+}

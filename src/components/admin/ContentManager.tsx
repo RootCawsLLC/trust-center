@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Pencil, Trash2, X, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Loader2, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
 import { Pill } from "@/components/admin/ui";
 import { RichTextEditor } from "@/components/admin/RichTextEditor";
 
@@ -41,7 +41,23 @@ export function ContentManager({
   const [editing, setEditing] = useState<Item | null>(null);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sort, setSort] = useState<{ key: string; dir: "asc" | "desc" } | null>(null);
   const router = useRouter();
+
+  const sortedItems = sort
+    ? [...items].sort((a, b) => {
+        const av = a[sort.key];
+        const bv = b[sort.key];
+        let cmp: number;
+        if (typeof av === "number" && typeof bv === "number") cmp = av - bv;
+        else cmp = String(av ?? "").localeCompare(String(bv ?? ""), undefined, { numeric: true });
+        return sort.dir === "asc" ? cmp : -cmp;
+      })
+    : items;
+
+  function toggleSort(key: string) {
+    setSort((s) => (s?.key === key ? { key, dir: s.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" }));
+  }
 
   async function onDelete(item: Item) {
     if (!confirm("Delete this item? This cannot be undone.")) return;
@@ -71,13 +87,22 @@ export function ContentManager({
             <thead className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-wide text-ink-faint">
               <tr>
                 {columns.map((c) => (
-                  <th key={c.key} className="px-4 py-2.5 font-medium">{c.label}</th>
+                  <th key={c.key} className="px-4 py-2.5 font-medium">
+                    <button onClick={() => toggleSort(c.key)} className="inline-flex items-center gap-1 hover:text-ink">
+                      {c.label}
+                      {sort?.key === c.key ? (
+                        sort.dir === "asc" ? <ChevronUp size={13} /> : <ChevronDown size={13} />
+                      ) : (
+                        <ChevronsUpDown size={13} className="text-slate-300" />
+                      )}
+                    </button>
+                  </th>
                 ))}
                 <th className="px-4 py-2.5"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {items.map((item) => (
+              {sortedItems.map((item) => (
                 <tr key={item.id} className="align-top">
                   {columns.map((c) => (
                     <td key={c.key} className="px-4 py-3 text-ink-soft">

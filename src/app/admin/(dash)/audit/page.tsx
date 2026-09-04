@@ -1,7 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import { PageHeader, Pill } from "@/components/admin/ui";
+import { SortHeader } from "@/components/admin/SortHeader";
 import { formatDate } from "@/lib/utils";
+import { firstStr, orderByFromParams } from "@/lib/filters";
 import { ShieldCheck } from "lucide-react";
+
+const AUDIT_SORTS = ["createdAt", "action", "actorEmail"] as const;
+type SP = Promise<Record<string, string | string[] | undefined>>;
 
 export const dynamic = "force-dynamic";
 
@@ -16,9 +21,10 @@ const ACTION_TONE: Record<string, "slate" | "amber" | "emerald" | "red"> = {
   USER_UPDATE: "amber",
 };
 
-export default async function AuditPage() {
+export default async function AuditPage({ searchParams }: { searchParams: SP }) {
+  const sp = await searchParams;
   const entries = await prisma.auditLog.findMany({
-    orderBy: { createdAt: "desc" },
+    orderBy: orderByFromParams(firstStr(sp.sort), firstStr(sp.dir), AUDIT_SORTS, { createdAt: "desc" }),
     take: 500,
   });
 
@@ -45,11 +51,11 @@ export default async function AuditPage() {
           <table className="w-full text-sm">
             <thead className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-wide text-ink-faint">
               <tr>
-                <th className="px-4 py-2.5 font-medium">Action</th>
-                <th className="px-4 py-2.5 font-medium">Actor</th>
+                <th className="px-4 py-2.5 font-medium"><SortHeader label="Action" sortKey="action" /></th>
+                <th className="px-4 py-2.5 font-medium"><SortHeader label="Actor" sortKey="actorEmail" /></th>
                 <th className="px-4 py-2.5 font-medium">Target</th>
                 <th className="px-4 py-2.5 font-medium">Details</th>
-                <th className="px-4 py-2.5 font-medium">When</th>
+                <th className="px-4 py-2.5 font-medium"><SortHeader label="When" sortKey="createdAt" /></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">

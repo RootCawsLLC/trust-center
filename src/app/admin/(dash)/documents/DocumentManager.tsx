@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Pencil, Trash2, X, Lock, Globe, Loader2, Upload } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Lock, Globe, Loader2, Upload, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
 import { createDocument, updateDocument, deleteDocument } from "./actions";
 import { bytesToSize } from "@/lib/utils";
 import { CATEGORY_SINGULAR, INDUSTRIES, REGIONS, FRAMEWORKS } from "@/lib/constants";
@@ -61,6 +61,35 @@ export function DocumentManager({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [sort, setSort] = useState<{ key: keyof AdminDoc; dir: "asc" | "desc" } | null>(null);
+
+  const sortedDocs = sort
+    ? [...docs].sort((a, b) => {
+        const av = a[sort.key];
+        const bv = b[sort.key];
+        let cmp: number;
+        if (typeof av === "number" && typeof bv === "number") cmp = av - bv;
+        else cmp = String(av ?? "").localeCompare(String(bv ?? ""), undefined, { numeric: true });
+        return sort.dir === "asc" ? cmp : -cmp;
+      })
+    : docs;
+  function toggleSort(key: keyof AdminDoc) {
+    setSort((s) => (s?.key === key ? { key, dir: s.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" }));
+  }
+  function SortTh({ label, k }: { label: string; k: keyof AdminDoc }) {
+    return (
+      <th className="px-4 py-2.5 font-medium">
+        <button onClick={() => toggleSort(k)} className="inline-flex items-center gap-1 hover:text-ink">
+          {label}
+          {sort?.key === k ? (
+            sort.dir === "asc" ? <ChevronUp size={13} /> : <ChevronDown size={13} />
+          ) : (
+            <ChevronsUpDown size={13} className="text-slate-300" />
+          )}
+        </button>
+      </th>
+    );
+  }
 
   function onDelete(doc: AdminDoc) {
     if (!confirm(`Delete "${doc.title}"? This cannot be undone.`)) return;
@@ -95,16 +124,16 @@ export function DocumentManager({
           <table className="w-full text-sm">
             <thead className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-wide text-ink-faint">
               <tr>
-                <th className="px-4 py-2.5 font-medium">Title</th>
-                <th className="px-4 py-2.5 font-medium">Category</th>
-                <th className="px-4 py-2.5 font-medium">Visibility</th>
-                <th className="px-4 py-2.5 font-medium">Status</th>
-                <th className="px-4 py-2.5 font-medium">Requests</th>
+                <SortTh label="Title" k="title" />
+                <SortTh label="Category" k="category" />
+                <SortTh label="Visibility" k="visibility" />
+                <SortTh label="Status" k="status" />
+                <SortTh label="Requests" k="requestCount" />
                 <th className="px-4 py-2.5"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {docs.map((d) => (
+              {sortedDocs.map((d) => (
                 <tr key={d.id}>
                   <td className="px-4 py-3">
                     <div className="font-medium text-ink">{d.title}</div>

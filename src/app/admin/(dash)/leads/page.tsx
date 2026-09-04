@@ -3,10 +3,13 @@ import { prisma } from "@/lib/prisma";
 import { PageHeader, Pill } from "@/components/admin/ui";
 import { FilterBar } from "@/components/admin/FilterBar";
 import { SavedViews } from "@/components/admin/SavedViews";
+import { SortHeader } from "@/components/admin/SortHeader";
 import { getSession } from "@/lib/session";
 import { formatDate } from "@/lib/utils";
 import { isFreemail } from "@/lib/salesforce";
-import { dateRangeWhere, firstStr } from "@/lib/filters";
+import { dateRangeWhere, firstStr, orderByFromParams } from "@/lib/filters";
+
+const LEAD_SORTS = ["emailDomain", "sampleOrgName", "sampleCountry", "requestCount", "firstSeenAt", "lastSeenAt"] as const;
 import type { Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
@@ -32,7 +35,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: SP }) 
 
   const leads = await prisma.salesLead.findMany({
     where,
-    orderBy: [{ requestCount: "desc" }, { lastSeenAt: "desc" }],
+    orderBy: orderByFromParams(firstStr(sp.sort), firstStr(sp.dir), LEAD_SORTS, { requestCount: "desc" }),
   });
 
   const session = await getSession();
@@ -62,12 +65,12 @@ export default async function LeadsPage({ searchParams }: { searchParams: SP }) 
           <table className="w-full text-sm">
             <thead className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-wide text-ink-faint">
               <tr>
-                <th className="px-4 py-2.5 font-medium">Domain</th>
-                <th className="px-4 py-2.5 font-medium">Sample org</th>
-                <th className="px-4 py-2.5 font-medium">Country</th>
-                <th className="px-4 py-2.5 font-medium">Requests</th>
-                <th className="px-4 py-2.5 font-medium">First seen</th>
-                <th className="px-4 py-2.5 font-medium">Last seen</th>
+                <th className="px-4 py-2.5 font-medium"><SortHeader label="Domain" sortKey="emailDomain" /></th>
+                <th className="px-4 py-2.5 font-medium"><SortHeader label="Sample org" sortKey="sampleOrgName" /></th>
+                <th className="px-4 py-2.5 font-medium"><SortHeader label="Country" sortKey="sampleCountry" /></th>
+                <th className="px-4 py-2.5 font-medium"><SortHeader label="Requests" sortKey="requestCount" /></th>
+                <th className="px-4 py-2.5 font-medium"><SortHeader label="First seen" sortKey="firstSeenAt" /></th>
+                <th className="px-4 py-2.5 font-medium"><SortHeader label="Last seen" sortKey="lastSeenAt" /></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
