@@ -41,7 +41,6 @@ RUN mkdir -p /app/storage && chown -R nextjs:nodejs /app/storage
 
 USER nextjs
 EXPOSE 3000
-# Force bind to 0.0.0.0 — container runtimes (Fargate/App Runner) set HOSTNAME to
-# the container hostname, which would make Next's standalone server bind only to
-# that interface and fail platform health checks.
-CMD ["sh", "-c", "HOSTNAME=0.0.0.0 node server.js"]
+# Bind address comes from the HOSTNAME env var (set to 0.0.0.0 by the platform
+# config) so Next's standalone server listens on all interfaces.
+CMD ["node", "server.js"]

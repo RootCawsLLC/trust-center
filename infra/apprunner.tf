@@ -27,6 +27,9 @@ resource "aws_apprunner_service" "app" {
           COMPANY_NAME    = var.company_name
           AUTH_TRUST_HOST = "true"
           NODE_ENV        = "production"
+          # Make Next's standalone server bind all interfaces (else it inherits
+          # the container hostname and App Runner health checks can't reach it).
+          HOSTNAME = "0.0.0.0"
         }
         runtime_environment_secrets = {
           DATABASE_URL = aws_secretsmanager_secret.database_url.arn
