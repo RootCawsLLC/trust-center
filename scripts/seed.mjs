@@ -219,6 +219,40 @@ language in the admin console before UAT.`;
     created++;
   }
 
+  // --- Subprocessors / Knowledge base / Updates (only if empty) ---
+  if ((await prisma.subprocessor.count()) === 0) {
+    await prisma.subprocessor.createMany({
+      data: [
+        { name: "Amazon Web Services", purpose: "Cloud infrastructure & hosting", location: "United States (us-east-1)", website: "https://aws.amazon.com", sortOrder: 1 },
+        { name: "Cloudflare", purpose: "CDN & DDoS protection", location: "Global", website: "https://cloudflare.com", sortOrder: 2 },
+        { name: "Datadog", purpose: "Application & infrastructure monitoring", location: "United States", website: "https://datadoghq.com", sortOrder: 3 },
+        { name: "Stripe", purpose: "Payment processing", location: "United States", website: "https://stripe.com", sortOrder: 4 },
+        { name: "Twilio SendGrid", purpose: "Transactional email", location: "United States", website: "https://sendgrid.com", sortOrder: 5 },
+        { name: "Snowflake", purpose: "Data warehousing & analytics", location: "European Union (eu-central-1)", website: "https://snowflake.com", sortOrder: 6 },
+      ],
+    });
+  }
+  if ((await prisma.knowledgeArticle.count()) === 0) {
+    await prisma.knowledgeArticle.createMany({
+      data: [
+        { title: "How do I request access to confidential documents?", category: "Getting started", sortOrder: 1, bodyMarkdown: "Open any document marked \"NDA required,\" fill in your details, then read and accept the click-through NDA. Access is granted immediately after acceptance." },
+        { title: "Where is customer data stored?", category: "Security", sortOrder: 2, bodyMarkdown: "Production data is hosted on AWS in the United States, with an EU data-residency option available on request. All data is encrypted in transit (TLS 1.2+) and at rest (AES-256)." },
+        { title: "What is your data retention & deletion policy?", category: "Privacy", sortOrder: 3, bodyMarkdown: "We retain customer data for the life of the contract plus 30 days, after which it is deleted. See the Data Retention & Deletion Policy in the document center for specifics, and submit deletion requests to privacy@example.com." },
+        { title: "How do I report a security vulnerability?", category: "Security", sortOrder: 4, bodyMarkdown: "Email security@example.com with details and reproduction steps. We acknowledge reports within one business day and do not pursue good-faith researchers." },
+      ],
+    });
+  }
+  if ((await prisma.trustUpdate.count()) === 0) {
+    await prisma.trustUpdate.createMany({
+      data: [
+        { title: "SOC 2 Type II report for 2026 now available", type: "compliance", bodyMarkdown: "Our latest SOC 2 Type II report, covering a 12-month period, is available under NDA in the document center.", publishedAt: new Date("2026-08-15") },
+        { title: "Added EU AI Act contractual addendum", type: "new", bodyMarkdown: "A new contractual addendum addressing EU AI Act obligations is available for customers deploying our AI features in the EU.", publishedAt: new Date("2026-07-02") },
+        { title: "Enforced TLS 1.3 and rotated certificates", type: "security", bodyMarkdown: "We now require TLS 1.3 for all customer-facing endpoints and completed our scheduled certificate rotation.", publishedAt: new Date("2026-06-10") },
+        { title: "Trust Center launched", type: "update", bodyMarkdown: "Welcome to our Trust Center — a single place to review our security posture, certifications, and legal documents.", publishedAt: new Date("2026-05-01") },
+      ],
+    });
+  }
+
   console.log(
     `[seed] users, NDA template, ${customers.length} SF customers, documents: ${created} created / ${updated} updated. Admin: ${adminEmail}`,
   );

@@ -249,6 +249,47 @@ model DownloadGrant {
   downloadCount     Int      @default(0)
 }
 
+// ---------------------------------------------------------------------------
+// Trust-center content: subprocessors, knowledge base, updates.
+// ---------------------------------------------------------------------------
+
+model Subprocessor {
+  id        String   @id @default(cuid())
+  name      String
+  purpose   String
+  location  String
+  website   String?
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model KnowledgeArticle {
+  id           String   @id @default(cuid())
+  title        String
+  category     String   @default("General")
+  bodyMarkdown String   @db.Text
+  isPublished  Boolean  @default(true)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([isPublished])
+}
+
+model TrustUpdate {
+  id           String   @id @default(cuid())
+  title        String
+  bodyMarkdown String   @db.Text
+  type         String   @default("update") // update | new | security | compliance
+  publishedAt  DateTime @default(now())
+  isPublished  Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  @@index([publishedAt])
+}
+
 model AuditLog {
   id         String   @id @default(cuid())
   createdAt  DateTime @default(now())

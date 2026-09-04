@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { ShieldCheck, BadgeCheck, ArrowRight, Lock } from "lucide-react";
 import { prisma } from "@/lib/prisma";
-import { DocumentLibrary, type LibraryDoc } from "@/components/download/DocumentLibrary";
+import { type LibraryDoc } from "@/components/download/DocumentLibrary";
+import { TrustTabs } from "@/components/download/TrustTabs";
 
 export const dynamic = "force-dynamic";
 
@@ -14,10 +15,24 @@ function uniqueSorted(v: string[]) {
 }
 
 export default async function HomePage() {
-  const docs = await prisma.document.findMany({
-    where: { isPublished: true },
-    orderBy: [{ category: "asc" }, { title: "asc" }],
-  });
+  const [docs, subprocessors, articles, updates] = await Promise.all([
+    prisma.document.findMany({
+      where: { isPublished: true },
+      orderBy: [{ category: "asc" }, { title: "asc" }],
+    }),
+    prisma.subprocessor.findMany({
+      where: { isActive: true },
+      orderBy: { sortOrder: "asc" },
+    }),
+    prisma.knowledgeArticle.findMany({
+      where: { isPublished: true },
+      orderBy: { sortOrder: "asc" },
+    }),
+    prisma.trustUpdate.findMany({
+      where: { isPublished: true },
+      orderBy: { publishedAt: "desc" },
+    }),
+  ]);
 
   const libraryDocs: LibraryDoc[] = docs.map((d) => ({
     id: d.id,
@@ -99,17 +114,38 @@ export default async function HomePage() {
       {/* Document center */}
       <main className="mx-auto max-w-5xl px-6 py-10">
         <div className="mb-4">
-          <h2 className="text-xl font-bold tracking-tight text-ink">Document center</h2>
+          <h2 className="text-xl font-bold tracking-tight text-ink">Resources</h2>
           <p className="text-sm text-ink-soft">
-            Search and filter by category, industry, region, or framework. All
+            Documents, subprocessors, knowledge base, and product updates. All
             downloads require a few details; confidential documents also require an
             NDA.
           </p>
         </div>
-        {libraryDocs.length > 0 ? (
-          <DocumentLibrary docs={libraryDocs} />
-        ) : (
-          <p className="text-ink-faint">No documents published yet.</p>
+        <TrustTabs
+          docs={libraryDocs}
+          subprocessors={subprocessors.map((s) => ({
+            id: s.id,
+            name: s.name,
+            purpose: s.purpose,
+            location: s.location,
+            website: s.website,
+          }))}
+          articles={articles.map((a) => ({
+            id: a.id,
+            title: a.title,
+            category: a.category,
+            bodyMarkdown: a.bodyMarkdown,
+          }))}
+          updates={updates.map((u) => ({
+            id: u.id,
+            title: u.title,
+            bodyMarkdown: u.bodyMarkdown,
+            type: u.type,
+            publishedAt: u.publishedAt.toISOString(),
+          }))}
+        />
+        {libraryDocs.length === 0 && (
+          <p className="mt-2 text-ink-faint">No documents published yet.</p>
         )}
       </main>
 

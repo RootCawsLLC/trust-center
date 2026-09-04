@@ -14,6 +14,9 @@ import {
   Settings,
   LogOut,
   ExternalLink,
+  Network,
+  BookOpen,
+  Megaphone,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -23,6 +26,9 @@ const NAV = [
   { href: "/admin/requests", label: "Requests", icon: Inbox },
   { href: "/admin/leads", label: "Sales leads", icon: Target },
   { href: "/admin/nda", label: "NDA templates", icon: FileSignature },
+  { href: "/admin/subprocessors", label: "Subprocessors", icon: Network },
+  { href: "/admin/knowledge", label: "Knowledge base", icon: BookOpen },
+  { href: "/admin/updates", label: "Updates", icon: Megaphone },
   { href: "/admin/users", label: "Users", icon: Users, ownerOnly: true },
   { href: "/admin/audit", label: "Audit log", icon: ScrollText },
   { href: "/admin/settings", label: "Settings", icon: Settings },
