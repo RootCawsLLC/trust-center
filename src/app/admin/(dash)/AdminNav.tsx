@@ -17,11 +17,13 @@ import {
   Network,
   BookOpen,
   Megaphone,
+  BarChart3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
+  { href: "/admin/metrics", label: "Metrics", icon: BarChart3 },
   { href: "/admin/documents", label: "Documents", icon: FileText },
   { href: "/admin/requests", label: "Requests", icon: Inbox },
   { href: "/admin/leads", label: "Sales leads", icon: Target },

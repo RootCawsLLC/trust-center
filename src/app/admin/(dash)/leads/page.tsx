@@ -2,6 +2,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { PageHeader, Pill } from "@/components/admin/ui";
 import { FilterBar } from "@/components/admin/FilterBar";
+import { SavedViews } from "@/components/admin/SavedViews";
+import { getSession } from "@/lib/session";
 import { formatDate } from "@/lib/utils";
 import { isFreemail } from "@/lib/salesforce";
 import { dateRangeWhere, firstStr } from "@/lib/filters";
@@ -33,12 +35,22 @@ export default async function LeadsPage({ searchParams }: { searchParams: SP }) 
     orderBy: [{ requestCount: "desc" }, { lastSeenAt: "desc" }],
   });
 
+  const session = await getSession();
+  const savedViews = session?.user?.id
+    ? await prisma.savedView.findMany({
+        where: { userId: session.user.id, path: "/admin/leads" },
+        orderBy: { createdAt: "desc" },
+        select: { id: true, name: true, query: true },
+      })
+    : [];
+
   return (
     <div>
       <PageHeader
         title="Sales leads"
         description="Email domains that requested documents but are not matched to a Salesforce customer. Click a domain for the full record."
       />
+      <SavedViews views={savedViews} />
       <FilterBar searchPlaceholder="Search domain, org, country…" showDateRange />
 
       {leads.length === 0 ? (

@@ -2,6 +2,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { PageHeader, ClassBadge, Pill } from "@/components/admin/ui";
 import { FilterBar } from "@/components/admin/FilterBar";
+import { SavedViews } from "@/components/admin/SavedViews";
+import { getSession } from "@/lib/session";
 import { formatDate } from "@/lib/utils";
 import { dateRangeWhere, firstStr } from "@/lib/filters";
 import { Lock, ShieldCheck } from "lucide-react";
@@ -49,12 +51,23 @@ export default async function RequestsPage({ searchParams }: { searchParams: SP 
     take: 500,
   });
 
+  const session = await getSession();
+  const savedViews = session?.user?.id
+    ? await prisma.savedView.findMany({
+        where: { userId: session.user.id, path: "/admin/requests" },
+        orderBy: { createdAt: "desc" },
+        select: { id: true, name: true, query: true },
+      })
+    : [];
+
   return (
     <div>
       <PageHeader
         title="Requests"
         description="Every document request, captured to an append-only ledger."
       />
+
+      <SavedViews views={savedViews} />
 
       <FilterBar
         searchPlaceholder="Search name, email, org, domain, document…"

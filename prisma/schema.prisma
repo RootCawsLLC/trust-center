@@ -60,9 +60,23 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  accounts  Account[]
-  sessions  Session[]
-  documents Document[]
+  accounts   Account[]
+  sessions   Session[]
+  documents  Document[]
+  savedViews SavedView[]
+}
+
+// A named filter/view a user saves on a list tab (e.g., "Q2 2026 requests").
+model SavedView {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  path      String // e.g. /admin/requests
+  query     String // the saved search params
+  createdAt DateTime @default(now())
+
+  @@index([userId, path])
 }
 
 model Account {

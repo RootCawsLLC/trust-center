@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/admin/ui";
 import { FilterBar } from "@/components/admin/FilterBar";
+import { SavedViews } from "@/components/admin/SavedViews";
+import { getSession } from "@/lib/session";
 import { DocumentManager, type AdminDoc } from "./DocumentManager";
 import { CATEGORY_ORDER, CATEGORY_SINGULAR } from "@/lib/constants";
 import { firstStr } from "@/lib/filters";
@@ -43,6 +45,15 @@ export default async function DocumentsPage({ searchParams }: { searchParams: SP
     }),
   ]);
 
+  const session = await getSession();
+  const savedViews = session?.user?.id
+    ? await prisma.savedView.findMany({
+        where: { userId: session.user.id, path: "/admin/documents" },
+        orderBy: { createdAt: "desc" },
+        select: { id: true, name: true, query: true },
+      })
+    : [];
+
   const adminDocs: AdminDoc[] = docs.map((d) => ({
     id: d.id,
     title: d.title,
@@ -66,6 +77,7 @@ export default async function DocumentsPage({ searchParams }: { searchParams: SP
         title="Documents"
         description="Create, upload, and publish documents. Set each one public or private."
       />
+      <SavedViews views={savedViews} />
       <FilterBar
         searchPlaceholder="Search title, file, description…"
         selects={[

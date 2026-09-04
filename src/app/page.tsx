@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { ShieldCheck, BadgeCheck, ArrowRight } from "lucide-react";
+import { ShieldCheck, ArrowRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { CertBadge } from "@/components/marketing/CertBadge";
 import { type LibraryDoc } from "@/components/download/DocumentLibrary";
 import { TrustTabs } from "@/components/download/TrustTabs";
 
@@ -76,15 +77,9 @@ export default async function HomePage() {
               <div className="mb-2 text-xs font-medium uppercase tracking-wide text-ink-faint">
                 Certifications &amp; attestations
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-4">
                 {badges.map((b) => (
-                  <span
-                    key={b}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-medium text-ink"
-                  >
-                    <BadgeCheck size={15} className="text-brand-600" />
-                    {b}
-                  </span>
+                  <CertBadge key={b} name={b} />
                 ))}
               </div>
             </div>
