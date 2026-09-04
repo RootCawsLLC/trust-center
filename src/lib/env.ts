@@ -14,6 +14,10 @@ export const env = {
   S3_BUCKET: opt("S3_BUCKET"),
   AWS_REGION: process.env.AWS_REGION ?? "us-east-1",
 
+  DEMO_MODE: (process.env.DEMO_MODE ?? "false").toLowerCase() === "true",
+  DEMO_EMAIL: process.env.DEMO_EMAIL ?? "admin@trustcenter.local",
+  DEMO_PASSWORD: process.env.DEMO_PASSWORD ?? "ChangeMe!Admin123",
+
   OKTA_ISSUER: opt("OKTA_ISSUER"),
   OKTA_CLIENT_ID: opt("OKTA_CLIENT_ID"),
   OKTA_CLIENT_SECRET: opt("OKTA_CLIENT_SECRET"),

@@ -1,4 +1,4 @@
-import { ssoEnabled } from "@/lib/env";
+import { ssoEnabled, env } from "@/lib/env";
 import { LoginForm } from "./LoginForm";
 import { ShieldCheck } from "lucide-react";
 
@@ -20,7 +20,13 @@ export default function LoginPage() {
           </p>
         </div>
         <div className="card p-6">
-          <LoginForm okta={ssoEnabled.okta} google={ssoEnabled.google} />
+          <LoginForm
+            okta={ssoEnabled.okta}
+            google={ssoEnabled.google}
+            demo={env.DEMO_MODE}
+            demoEmail={env.DEMO_EMAIL}
+            demoPassword={env.DEMO_PASSWORD}
+          />
         </div>
       </div>
     </div>

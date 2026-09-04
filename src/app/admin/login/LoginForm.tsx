@@ -3,9 +3,21 @@
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
-import { Loader2 } from "lucide-react";
+import { Loader2, PlayCircle } from "lucide-react";
 
-export function LoginForm({ okta, google }: { okta: boolean; google: boolean }) {
+export function LoginForm({
+  okta,
+  google,
+  demo = false,
+  demoEmail = "",
+  demoPassword = "",
+}: {
+  okta: boolean;
+  google: boolean;
+  demo?: boolean;
+  demoEmail?: string;
+  demoPassword?: string;
+}) {
   const params = useSearchParams();
   const callbackUrl = params.get("callbackUrl") || "/admin";
   const [email, setEmail] = useState("");
@@ -13,13 +25,12 @@ export function LoginForm({ okta, google }: { okta: boolean; google: boolean }) 
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function doSignIn(e: string, p: string) {
     setLoading(true);
     setError(null);
     const res = await signIn("credentials", {
-      email,
-      password,
+      email: e,
+      password: p,
       redirect: false,
     });
     setLoading(false);
@@ -32,6 +43,31 @@ export function LoginForm({ okta, google }: { okta: boolean; google: boolean }) 
 
   return (
     <div className="space-y-4">
+      {demo && (
+        <div className="rounded-lg border border-brand-200 bg-brand-50 p-3">
+          <p className="text-xs font-medium text-brand-800">Demo environment</p>
+          <p className="mt-0.5 text-xs text-brand-700">
+            Synthetic data only. Sign in as the vendor to explore the admin console.
+          </p>
+          <button
+            type="button"
+            onClick={() => doSignIn(demoEmail, demoPassword)}
+            className="btn-primary mt-2 w-full"
+            disabled={loading}
+          >
+            {loading ? (
+              <Loader2 className="animate-spin" size={16} />
+            ) : (
+              <PlayCircle size={16} />
+            )}
+            Enter demo as vendor admin
+          </button>
+          <p className="mt-2 text-center text-[11px] text-brand-700/80">
+            {demoEmail} · {demoPassword}
+          </p>
+        </div>
+      )}
+
       {(okta || google) && (
         <div className="space-y-2">
           {okta && (
@@ -59,7 +95,13 @@ export function LoginForm({ okta, google }: { okta: boolean; google: boolean }) 
         </div>
       )}
 
-      <form onSubmit={onSubmit} className="space-y-3">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          doSignIn(email, password);
+        }}
+        className="space-y-3"
+      >
         <div>
           <label className="label">Email</label>
           <input

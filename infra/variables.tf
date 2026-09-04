@@ -87,3 +87,9 @@ variable "app_url" {
   type        = string
   default     = ""
 }
+
+variable "demo_mode" {
+  description = "Enable the demo login affordance on the sign-in page"
+  type        = bool
+  default     = false
+}
