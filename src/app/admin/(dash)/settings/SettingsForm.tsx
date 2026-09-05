@@ -83,6 +83,12 @@ export function SettingsForm({ settings }: { settings: ResolvedSettings }) {
           <Field label="Download link lifetime (minutes)">
             <input name="grantTtlMinutes" type="number" min={1} max={1440} className="input" defaultValue={settings.grantTtlMinutes} />
           </Field>
+          <Field label="Confidential-document access">
+            <select name="approvalMode" className="input" defaultValue={settings.approvalMode}>
+              <option value="auto">Automatic — grant instantly after NDA</option>
+              <option value="manual">Manual — require admin approval</option>
+            </select>
+          </Field>
           <div className="sm:col-span-2">
             <Field label="Data-handling note (shown to requesters)">
               <textarea name="retentionNote" className="input min-h-20" defaultValue={settings.retentionNote ?? ""} placeholder="e.g. We retain request records to manage access to our documentation." />

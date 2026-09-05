@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X, ShieldCheck, Lock, FileText, CheckCircle2, Loader2 } from "lucide-react";
+import { X, ShieldCheck, Lock, FileText, CheckCircle2, Loader2, Clock, Ban } from "lucide-react";
 import { COUNTRIES } from "@/lib/constants";
 
 export type PublicDoc = {
@@ -13,7 +13,7 @@ export type PublicDoc = {
   fileName: string;
 };
 
-type Phase = "form" | "nda" | "done";
+type Phase = "form" | "nda" | "done" | "pending" | "denied";
 type FieldErrors = Record<string, string[] | undefined>;
 
 export function DownloadModal({
@@ -118,6 +118,8 @@ export function DownloadModal({
         return;
       }
       if (data.status === "ready") startDownload(data.token);
+      else if (data.status === "pending") setPhase("pending");
+      else if (data.status === "denied") setPhase("denied");
     } catch {
       setFormError("Network error. Please try again.");
     } finally {
@@ -283,6 +285,38 @@ export function DownloadModal({
               Accept & download
             </button>
           </form>
+        )}
+
+        {/* Step: pending approval */}
+        {phase === "pending" && (
+          <div className="space-y-4 p-8 text-center">
+            <Clock className="mx-auto text-amber-500" size={44} />
+            <div>
+              <h3 className="text-base font-semibold text-ink">Request submitted for approval</h3>
+              <p className="mt-1 text-sm text-ink-soft">
+                Thanks{form.requesterName ? `, ${form.requesterName.split(" ")[0]}` : ""}. Your NDA is recorded and this
+                confidential document now needs approval from our team. We&apos;ll email a
+                time-limited download link to <span className="font-medium text-ink">{form.requesterEmail}</span> once
+                it&apos;s approved.
+              </p>
+            </div>
+            <button onClick={close} className="btn-primary">Done</button>
+          </div>
+        )}
+
+        {/* Step: denied */}
+        {phase === "denied" && (
+          <div className="space-y-4 p-8 text-center">
+            <Ban className="mx-auto text-red-500" size={44} />
+            <div>
+              <h3 className="text-base font-semibold text-ink">Access not granted</h3>
+              <p className="mt-1 text-sm text-ink-soft">
+                We&apos;re unable to release this document to your organization automatically.
+                If you believe this is a mistake, contact us and we&apos;ll take another look.
+              </p>
+            </div>
+            <button onClick={close} className="btn-secondary">Close</button>
+          </div>
         )}
 
         {/* Step: done */}

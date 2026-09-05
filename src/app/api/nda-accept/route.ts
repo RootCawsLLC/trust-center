@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
 import crypto from "node:crypto";
-import { nanoid } from "nanoid";
 import { prisma } from "@/lib/prisma";
 import { ndaAcceptSchema } from "@/lib/validation";
 import { logAudit, clientIpFromHeaders } from "@/lib/audit";
-
-import { grantExpiryDate } from "@/lib/settings";
+import { getOrgSettings } from "@/lib/settings";
+import { issueGrant, evaluateDomainRule } from "@/lib/access";
 
 export async function POST(req: Request) {
   const json = await req.json().catch(() => null);
@@ -69,13 +68,31 @@ export async function POST(req: Request) {
     metadata: { ndaTemplate: nda.name, ndaBodyHash: bodyHash },
   });
 
-  const grant = await prisma.downloadGrant.create({
-    data: {
-      token: nanoid(40),
-      downloadRequestId: request.id,
-      expiresAt: await grantExpiryDate(),
-    },
-  });
+  // Approval gate. In "manual" mode a private-doc request needs admin approval
+  // before a grant is issued, unless a domain rule auto-approves or auto-denies.
+  const { approvalMode } = await getOrgSettings();
+  if (approvalMode === "manual") {
+    const rule = await evaluateDomainRule(request.emailDomain);
+    if (rule === "deny") {
+      await prisma.accessApproval.create({
+        data: { downloadRequestId: request.id, status: "auto-denied", reason: "Auto-denied by domain rule", decidedAt: new Date() },
+      });
+      await logAudit({ action: "ACCESS_AUTO_DENIED", actorEmail: request.requesterEmail, targetType: "DownloadRequest", targetId: request.id, ipAddress: ip, metadata: { domain: request.emailDomain } });
+      return NextResponse.json({ status: "denied" });
+    }
+    if (rule !== "approve") {
+      // Pending manual review — no grant yet.
+      await prisma.accessApproval.create({ data: { downloadRequestId: request.id, status: "pending" } });
+      await logAudit({ action: "ACCESS_PENDING", actorEmail: request.requesterEmail, targetType: "DownloadRequest", targetId: request.id, ipAddress: ip, metadata: { domain: request.emailDomain } });
+      return NextResponse.json({ status: "pending" });
+    }
+    // Auto-approved by domain rule → fall through and issue the grant.
+    await prisma.accessApproval.create({
+      data: { downloadRequestId: request.id, status: "auto-approved", reason: "Auto-approved by domain rule", decidedAt: new Date() },
+    });
+  }
+
+  const grant = await issueGrant(request.id);
 
   return NextResponse.json({
     status: "ready",

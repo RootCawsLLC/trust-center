@@ -239,6 +239,7 @@ model DownloadRequest {
 
   ndaAcceptance NdaAcceptance?
   grant         DownloadGrant?
+  approval      AccessApproval?
 
   @@index([emailDomain])
   @@index([createdAt])
@@ -363,6 +364,7 @@ model OrgSettings {
   showKnowledge     Boolean  @default(true)
   showUpdates       Boolean  @default(true)
   grantTtlMinutes   Int      @default(15)
+  approvalMode      String   @default("auto") // auto = instant grant; manual = require admin approval for private docs
   retentionNote     String?  @db.Text
   updatedAt         DateTime @updatedAt
 }
@@ -480,6 +482,33 @@ model Integration {
   status    String   @default("disconnected") // connected | disconnected
   note      String?
   updatedAt DateTime @updatedAt
+}
+
+// Approval decision for a private-document request (mutable operational table
+// keyed to the immutable DownloadRequest). In "manual" approval mode the grant
+// is only issued once this is approved; domain rules can auto-approve/deny.
+model AccessApproval {
+  id                String    @id @default(cuid())
+  downloadRequestId String    @unique
+  downloadRequest   DownloadRequest @relation(fields: [downloadRequestId], references: [id])
+  status            String    @default("pending") // pending | approved | denied | auto-approved | auto-denied
+  decidedById       String?
+  decidedByEmail    String?
+  reason            String?
+  decidedAt         DateTime?
+  createdAt         DateTime  @default(now())
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+// Auto-approval / auto-deny rule for a requesting email domain.
+model AccessRule {
+  id        String   @id @default(cuid())
+  domain    String   @unique
+  decision  String // approve | deny
+  note      String?
+  createdAt DateTime @default(now())
 }
 
 // A visitor who subscribed to trust-center change notifications. Domain is

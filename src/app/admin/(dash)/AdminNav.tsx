@@ -27,6 +27,7 @@ import {
   LifeBuoy,
   Tags,
   Bell,
+  KeyRound,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -39,6 +40,7 @@ const NAV = [
   { href: "/admin/shared-responsibility", label: "Shared responsibility", icon: SplitSquareHorizontal },
   { href: "/admin/compliance-calendar", label: "Compliance calendar", icon: CalendarDays },
   { href: "/admin/requests", label: "Requests", icon: Inbox },
+  { href: "/admin/access", label: "Access requests", icon: KeyRound },
   { href: "/admin/leads", label: "Sales leads", icon: Target },
   { href: "/admin/subscribers", label: "Subscribers", icon: Bell },
   { href: "/admin/tickets", label: "Tickets", icon: LifeBuoy },

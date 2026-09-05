@@ -11,6 +11,7 @@ export type ResolvedSettings = {
   showKnowledge: boolean;
   showUpdates: boolean;
   grantTtlMinutes: number;
+  approvalMode: "auto" | "manual";
   retentionNote: string | null;
 };
 
@@ -40,6 +41,7 @@ export async function getOrgSettings(): Promise<ResolvedSettings> {
     showKnowledge: row?.showKnowledge ?? true,
     showUpdates: row?.showUpdates ?? true,
     grantTtlMinutes: row?.grantTtlMinutes ?? 15,
+    approvalMode: row?.approvalMode === "manual" ? "manual" : "auto",
     retentionNote: row?.retentionNote ?? null,
   };
 }

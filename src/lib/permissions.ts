@@ -17,6 +17,7 @@ export const MODULES: ModuleDef[] = [
   { key: "shared-responsibility", label: "Shared responsibility" },
   { key: "compliance-calendar", label: "Compliance calendar" },
   { key: "requests", label: "Requests" },
+  { key: "access", label: "Access requests" },
   { key: "leads", label: "Sales leads" },
   { key: "subscribers", label: "Subscribers" },
   { key: "tickets", label: "Tickets" },

@@ -43,5 +43,23 @@ for (const g of groups) {
 for (const i of integrations) {
   await p.integration.upsert({ where: { key: i.key }, update: { name: i.name, category: i.category, note: i.note }, create: i });
 }
-console.log("seeded", groups.length, "groups,", integrations.length, "integrations");
+
+// Access-approval demo: auto-approval rules + a couple of approvals attached to
+// existing private-document requests so the Access requests tab is populated.
+if ((await p.accessRule.count()) === 0) {
+  await p.accessRule.createMany({
+    data: [
+      { domain: "northwind.com", decision: "approve", note: "Existing customer" },
+      { domain: "globex.com", decision: "approve", note: "Existing customer" },
+      { domain: "spammer.example", decision: "deny", note: "Blocklisted" },
+    ],
+  });
+}
+if ((await p.accessApproval.count()) === 0) {
+  const reqs = await p.downloadRequest.findMany({ where: { documentVisibility: "PRIVATE" }, take: 2, orderBy: { createdAt: "desc" } });
+  if (reqs[0]) await p.accessApproval.create({ data: { downloadRequestId: reqs[0].id, status: "pending" } });
+  if (reqs[1]) await p.accessApproval.create({ data: { downloadRequestId: reqs[1].id, status: "approved", decidedByEmail: "admin@trustcenter.local", decidedAt: new Date(), reason: "Verified customer" } });
+}
+
+console.log("seeded", groups.length, "groups,", integrations.length, "integrations, access rules + demo approvals");
 await p.$disconnect();

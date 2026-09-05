@@ -40,6 +40,7 @@ export async function saveSettings(fd: FormData): Promise<ActionResult> {
     showKnowledge: bool(fd, "showKnowledge"),
     showUpdates: bool(fd, "showUpdates"),
     grantTtlMinutes: Number.isFinite(ttl) && ttl >= 1 && ttl <= 1440 ? Math.round(ttl) : 15,
+    approvalMode: s(fd, "approvalMode") === "manual" ? "manual" : "auto",
     retentionNote: s(fd, "retentionNote") || null,
   };
 
