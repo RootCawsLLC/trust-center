@@ -24,8 +24,16 @@ export default async function TicketsPage({ searchParams }: { searchParams: SP }
     ];
   }
 
+  const priority = firstStr(sp.priority);
+  if (priority && ["low", "normal", "high", "urgent"].includes(priority)) where.priority = priority;
+
   const [tickets, admins] = await Promise.all([
-    prisma.ticket.findMany({ where, orderBy: [{ status: "asc" }, { createdAt: "desc" }], take: 300 }),
+    prisma.ticket.findMany({
+      where,
+      orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+      take: 300,
+      include: { _count: { select: { comments: true } } },
+    }),
     prisma.user.findMany({ where: { isActive: true, role: { in: ["OWNER", "ADMIN"] } }, select: { id: true, email: true }, orderBy: { email: "asc" } }),
   ]);
 
@@ -38,9 +46,11 @@ export default async function TicketsPage({ searchParams }: { searchParams: SP }
     emailDomain: t.emailDomain,
     matchedCustomerName: t.matchedCustomerName,
     status: t.status,
+    priority: t.priority,
     source: t.source,
     assignedToId: t.assignedToId,
     createdAt: t.createdAt.toISOString(),
+    commentCount: t._count.comments,
   }));
   const assignees: Assignee[] = admins;
 
@@ -60,6 +70,16 @@ export default async function TicketsPage({ searchParams }: { searchParams: SP }
               { value: "open", label: "Open" },
               { value: "in-progress", label: "In progress" },
               { value: "resolved", label: "Resolved" },
+            ],
+          },
+          {
+            key: "priority",
+            label: "Priority",
+            options: [
+              { value: "urgent", label: "Urgent" },
+              { value: "high", label: "High" },
+              { value: "normal", label: "Normal" },
+              { value: "low", label: "Low" },
             ],
           },
         ]}

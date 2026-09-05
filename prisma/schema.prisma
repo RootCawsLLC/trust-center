@@ -68,6 +68,7 @@ model User {
   documentVersions DocumentVersion[]
   savedViews       SavedView[]
   tickets          Ticket[]
+  ticketComments   TicketComment[]
 }
 
 // A named filter/view a user saves on a list tab (e.g., "Q2 2026 requests").
@@ -504,6 +505,7 @@ model Ticket {
   emailDomain         String?
   matchedCustomerName String?
   status              String   @default("open") // open | in-progress | resolved
+  priority            String   @default("normal") // low | normal | high | urgent
   source              String   @default("assistant") // assistant | manual
   assignedToId        String?
   assignedTo          User?    @relation(fields: [assignedToId], references: [id])
@@ -511,6 +513,25 @@ model Ticket {
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
+  comments TicketComment[]
+
   @@index([status])
   @@index([createdAt])
+}
+
+// Comment / activity thread on a ticket. `isInternal` marks staff-only notes;
+// `system` rows are the audit trail (status changes, assignments) rendered inline.
+model TicketComment {
+  id          String   @id @default(cuid())
+  ticketId    String
+  ticket      Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  authorId    String?
+  author      User?    @relation(fields: [authorId], references: [id])
+  authorEmail String?
+  body        String   @db.Text
+  isInternal  Boolean  @default(true)
+  system      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([ticketId])
 }
