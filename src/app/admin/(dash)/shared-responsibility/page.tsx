@@ -2,11 +2,16 @@ import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/admin/ui";
 import { ContentManager } from "@/components/admin/ContentManager";
 import { saveRaci, deleteRaci } from "../content-actions";
+import { reorderRaci } from "../reorder-actions";
+import { getTaxonomySelectOptions } from "@/lib/taxonomy";
 
 export const dynamic = "force-dynamic";
 
 export default async function SharedResponsibilityPage() {
-  const items = await prisma.raciItem.findMany({ orderBy: { sortOrder: "asc" } });
+  const [items, areaOptions] = await Promise.all([
+    prisma.raciItem.findMany({ orderBy: { sortOrder: "asc" } }),
+    getTaxonomySelectOptions("raci.area"),
+  ]);
   return (
     <div>
       <PageHeader
@@ -33,16 +38,16 @@ export default async function SharedResponsibilityPage() {
           { key: "isPublished", label: "Published", type: "bool" },
         ]}
         fields={[
-          { name: "area", label: "Responsibility area", type: "text", required: true, full: true, placeholder: "Data encryption at rest" },
+          { name: "area", label: "Responsibility area", type: "select", options: areaOptions, full: true },
           { name: "corporate", label: "Corporate", type: "text", placeholder: "R / A / C / I or a short note" },
           { name: "product", label: "Product", type: "text" },
           { name: "customer", label: "Customer", type: "text" },
-          { name: "sortOrder", label: "Sort order", type: "number" },
           { name: "note", label: "Note", type: "text", full: true },
           { name: "isPublished", label: "Published", type: "checkbox" },
         ]}
         saveAction={saveRaci}
         deleteAction={deleteRaci}
+        reorderAction={reorderRaci}
       />
     </div>
   );

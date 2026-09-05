@@ -2,11 +2,16 @@ import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/admin/ui";
 import { ContentManager } from "@/components/admin/ContentManager";
 import { saveCertification, deleteCertification } from "../content-actions";
+import { reorderCertifications } from "../reorder-actions";
+import { getTaxonomySelectOptions } from "@/lib/taxonomy";
 
 export const dynamic = "force-dynamic";
 
 export default async function CertificationsPage() {
-  const items = await prisma.certification.findMany({ orderBy: { sortOrder: "asc" } });
+  const [items, frameworkOptions] = await Promise.all([
+    prisma.certification.findMany({ orderBy: { sortOrder: "asc" } }),
+    getTaxonomySelectOptions("certification.framework"),
+  ]);
   return (
     <div>
       <PageHeader
@@ -32,7 +37,7 @@ export default async function CertificationsPage() {
           { key: "isPublished", label: "Published", type: "bool" },
         ]}
         fields={[
-          { name: "framework", label: "Framework (must match document tags, e.g. SOC 2)", type: "text", required: true },
+          { name: "framework", label: "Framework", type: "select", options: frameworkOptions, hint: "Managed in the Attribute manager. Matches the document tag it certifies." },
           { name: "displayName", label: "Display name", type: "text" },
           {
             name: "status",
@@ -44,13 +49,13 @@ export default async function CertificationsPage() {
               { value: "Planned", label: "Planned" },
             ],
           },
-          { name: "sortOrder", label: "Sort order", type: "number" },
           { name: "productsInScope", label: "Products in scope (comma-separated)", type: "text", full: true, placeholder: "Platform, GovCloud, Mobile" },
           { name: "summaryHtml", label: "How we comply (rich text)", type: "richtext", full: true },
           { name: "isPublished", label: "Published", type: "checkbox" },
         ]}
         saveAction={saveCertification}
         deleteAction={deleteCertification}
+        reorderAction={reorderCertifications}
       />
     </div>
   );

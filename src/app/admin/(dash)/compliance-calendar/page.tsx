@@ -2,11 +2,17 @@ import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/admin/ui";
 import { ContentManager } from "@/components/admin/ContentManager";
 import { saveEvent, deleteEvent } from "../content-actions";
+import { reorderEvents } from "../reorder-actions";
+import { getTaxonomySelectOptions } from "@/lib/taxonomy";
 
 export const dynamic = "force-dynamic";
 
 export default async function ComplianceCalendarPage() {
-  const items = await prisma.complianceEvent.findMany({ orderBy: { sortOrder: "asc" } });
+  const [items, frameworkOptions, productOptions] = await Promise.all([
+    prisma.complianceEvent.findMany({ orderBy: { sortOrder: "asc" } }),
+    getTaxonomySelectOptions("compliance.framework"),
+    getTaxonomySelectOptions("compliance.product"),
+  ]);
   return (
     <div>
       <PageHeader
@@ -46,14 +52,14 @@ export default async function ComplianceCalendarPage() {
               { value: "complete", label: "Complete" },
             ],
           },
-          { name: "framework", label: "Framework", type: "text", placeholder: "SOC 2" },
-          { name: "product", label: "Product", type: "text", placeholder: "GovCloud" },
-          { name: "sortOrder", label: "Sort order", type: "number" },
+          { name: "framework", label: "Framework", type: "select", options: [{ value: "", label: "—" }, ...frameworkOptions] },
+          { name: "product", label: "Product", type: "select", options: [{ value: "", label: "—" }, ...productOptions] },
           { name: "detail", label: "Detail", type: "text", full: true },
           { name: "isPublished", label: "Published", type: "checkbox" },
         ]}
         saveAction={saveEvent}
         deleteAction={deleteEvent}
+        reorderAction={reorderEvents}
       />
     </div>
   );

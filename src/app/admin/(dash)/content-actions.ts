@@ -43,10 +43,6 @@ function s(fd: FormData, k: string) {
 function bool(fd: FormData, k: string) {
   return fd.get(k) === "on" || fd.get(k) === "true";
 }
-function num(fd: FormData, k: string) {
-  const n = Number(fd.get(k));
-  return Number.isFinite(n) ? n : 0;
-}
 
 // ---- Subprocessors ----
 export async function saveSubprocessor(id: string | null, fd: FormData): Promise<ActionResult> {
@@ -61,11 +57,13 @@ export async function saveSubprocessor(id: string | null, fd: FormData): Promise
     purpose,
     location,
     website: s(fd, "website") || null,
-    sortOrder: num(fd, "sortOrder"),
     isActive: fd.has("isActive") ? bool(fd, "isActive") : true,
   };
   if (id) await prisma.subprocessor.update({ where: { id }, data });
-  else await prisma.subprocessor.create({ data });
+  else {
+    const max = await prisma.subprocessor.aggregate({ _max: { sortOrder: true } });
+    await prisma.subprocessor.create({ data: { ...data, sortOrder: (max._max.sortOrder ?? 0) + 1 } });
+  }
   await logAudit({ action: id ? "SUBPROCESSOR_UPDATE" : "SUBPROCESSOR_CREATE", actorUserId: g.user.id, actorEmail: g.user.email, targetType: "Subprocessor", targetId: id ?? undefined, metadata: { name } });
   revalidatePath("/admin/subprocessors");
   revalidatePath("/");
@@ -226,12 +224,14 @@ export async function saveCertification(id: string | null, fd: FormData): Promis
     summaryHtml: summaryHtml || null,
     status: s(fd, "status") || "Certified",
     productsInScope,
-    sortOrder: num(fd, "sortOrder"),
     isPublished: fd.has("isPublished") ? bool(fd, "isPublished") : true,
   };
   try {
     if (id) await prisma.certification.update({ where: { id }, data });
-    else await prisma.certification.create({ data });
+    else {
+      const max = await prisma.certification.aggregate({ _max: { sortOrder: true } });
+      await prisma.certification.create({ data: { ...data, sortOrder: (max._max.sortOrder ?? 0) + 1 } });
+    }
   } catch {
     return { ok: false, error: "A certification with that framework already exists." };
   }
@@ -269,11 +269,13 @@ export async function saveRiskItem(id: string | null, fd: FormData): Promise<Act
     category: s(fd, "category") || "General",
     label,
     value,
-    sortOrder: num(fd, "sortOrder"),
     isPublished: fd.has("isPublished") ? bool(fd, "isPublished") : true,
   };
   if (id) await prisma.riskProfileItem.update({ where: { id }, data });
-  else await prisma.riskProfileItem.create({ data });
+  else {
+    const max = await prisma.riskProfileItem.aggregate({ _max: { sortOrder: true } });
+    await prisma.riskProfileItem.create({ data: { ...data, sortOrder: (max._max.sortOrder ?? 0) + 1 } });
+  }
   await logAudit({ action: id ? "RISK_UPDATE" : "RISK_CREATE", actorUserId: g.user.id, actorEmail: g.user.email, targetType: "RiskProfileItem", targetId: id ?? undefined, metadata: { label } });
   revalidatePath("/admin/risk-profile");
   revalidatePath("/");
@@ -301,11 +303,13 @@ export async function saveRaci(id: string | null, fd: FormData): Promise<ActionR
     product: s(fd, "product"),
     customer: s(fd, "customer"),
     note: s(fd, "note") || null,
-    sortOrder: num(fd, "sortOrder"),
     isPublished: fd.has("isPublished") ? bool(fd, "isPublished") : true,
   };
   if (id) await prisma.raciItem.update({ where: { id }, data });
-  else await prisma.raciItem.create({ data });
+  else {
+    const max = await prisma.raciItem.aggregate({ _max: { sortOrder: true } });
+    await prisma.raciItem.create({ data: { ...data, sortOrder: (max._max.sortOrder ?? 0) + 1 } });
+  }
   await logAudit({ action: id ? "RACI_UPDATE" : "RACI_CREATE", actorUserId: g.user.id, actorEmail: g.user.email, targetType: "RaciItem", targetId: id ?? undefined, metadata: { area } });
   revalidatePath("/admin/shared-responsibility");
   revalidatePath("/");
@@ -335,11 +339,13 @@ export async function saveEvent(id: string | null, fd: FormData): Promise<Action
     product: s(fd, "product") || null,
     window,
     status: s(fd, "status") || "planned",
-    sortOrder: num(fd, "sortOrder"),
     isPublished: fd.has("isPublished") ? bool(fd, "isPublished") : true,
   };
   if (id) await prisma.complianceEvent.update({ where: { id }, data });
-  else await prisma.complianceEvent.create({ data });
+  else {
+    const max = await prisma.complianceEvent.aggregate({ _max: { sortOrder: true } });
+    await prisma.complianceEvent.create({ data: { ...data, sortOrder: (max._max.sortOrder ?? 0) + 1 } });
+  }
   await logAudit({ action: id ? "EVENT_UPDATE" : "EVENT_CREATE", actorUserId: g.user.id, actorEmail: g.user.email, targetType: "ComplianceEvent", targetId: id ?? undefined, metadata: { title } });
   revalidatePath("/admin/compliance-calendar");
   revalidatePath("/");
@@ -379,12 +385,14 @@ export async function saveArticle(id: string | null, fd: FormData): Promise<Acti
     bodyMarkdown: s(fd, "bodyMarkdown"),
     contentHtml: contentHtml || null,
     url,
-    sortOrder: num(fd, "sortOrder"),
     isPublished: fd.has("isPublished") ? bool(fd, "isPublished") : true,
     ...(file ? { fileStorageKey: file.key, fileName: file.name } : {}),
   };
   if (id) await prisma.knowledgeArticle.update({ where: { id }, data });
-  else await prisma.knowledgeArticle.create({ data });
+  else {
+    const max = await prisma.knowledgeArticle.aggregate({ _max: { sortOrder: true } });
+    await prisma.knowledgeArticle.create({ data: { ...data, sortOrder: (max._max.sortOrder ?? 0) + 1 } });
+  }
   await logAudit({ action: id ? "ARTICLE_UPDATE" : "ARTICLE_CREATE", actorUserId: g.user.id, actorEmail: g.user.email, targetType: "KnowledgeArticle", targetId: id ?? undefined, metadata: { title } });
   revalidatePath("/admin/knowledge");
   revalidatePath("/");

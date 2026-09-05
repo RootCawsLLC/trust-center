@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/admin/ui";
 import { ContentManager } from "@/components/admin/ContentManager";
 import { saveSubprocessor, deleteSubprocessor } from "../content-actions";
+import { reorderSubprocessors } from "../reorder-actions";
 import { SubprocessorImport } from "./SubprocessorImport";
 
 export const dynamic = "force-dynamic";
@@ -37,12 +38,12 @@ export default async function SubprocessorsPage() {
           { name: "name", label: "Name", type: "text", required: true },
           { name: "location", label: "Location", type: "text", required: true },
           { name: "purpose", label: "Purpose", type: "text", required: true, full: true },
-          { name: "website", label: "Website", type: "text", placeholder: "https://…" },
-          { name: "sortOrder", label: "Sort order", type: "number" },
+          { name: "website", label: "Trust / security page URL", type: "text", placeholder: "https://trust.provider.com", hint: "Links out from the public subprocessor list." },
           { name: "isActive", label: "Active (shown publicly)", type: "checkbox" },
         ]}
         saveAction={saveSubprocessor}
         deleteAction={deleteSubprocessor}
+        reorderAction={reorderSubprocessors}
       />
     </div>
   );

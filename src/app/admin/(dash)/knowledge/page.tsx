@@ -2,12 +2,16 @@ import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/admin/ui";
 import { ContentManager } from "@/components/admin/ContentManager";
 import { saveArticle, deleteArticle } from "../content-actions";
-import { KB_CATEGORIES } from "@/lib/constants";
+import { reorderArticles } from "../reorder-actions";
+import { getTaxonomySelectOptions } from "@/lib/taxonomy";
 
 export const dynamic = "force-dynamic";
 
 export default async function KnowledgePage() {
-  const items = await prisma.knowledgeArticle.findMany({ orderBy: { sortOrder: "asc" } });
+  const [items, categoryOptions] = await Promise.all([
+    prisma.knowledgeArticle.findMany({ orderBy: { sortOrder: "asc" } }),
+    getTaxonomySelectOptions("knowledge.category"),
+  ]);
   return (
     <div>
       <PageHeader
@@ -37,9 +41,8 @@ export default async function KnowledgePage() {
             name: "category",
             label: "Category",
             type: "select",
-            options: KB_CATEGORIES.map((c) => ({ value: c, label: c })),
+            options: categoryOptions,
           },
-          { name: "sortOrder", label: "Sort order", type: "number" },
           {
             name: "contentHtml",
             label: "Body (rich text)",
@@ -66,6 +69,7 @@ export default async function KnowledgePage() {
         ]}
         saveAction={saveArticle}
         deleteAction={deleteArticle}
+        reorderAction={reorderArticles}
       />
     </div>
   );

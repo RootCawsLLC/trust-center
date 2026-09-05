@@ -2,11 +2,16 @@ import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/admin/ui";
 import { ContentManager } from "@/components/admin/ContentManager";
 import { saveRiskItem, deleteRiskItem } from "../content-actions";
+import { reorderRiskItems } from "../reorder-actions";
+import { getTaxonomySelectOptions } from "@/lib/taxonomy";
 
 export const dynamic = "force-dynamic";
 
 export default async function RiskProfilePage() {
-  const items = await prisma.riskProfileItem.findMany({ orderBy: { sortOrder: "asc" } });
+  const [items, categoryOptions] = await Promise.all([
+    prisma.riskProfileItem.findMany({ orderBy: { sortOrder: "asc" } }),
+    getTaxonomySelectOptions("risk.category"),
+  ]);
   return (
     <div>
       <PageHeader
@@ -30,14 +35,14 @@ export default async function RiskProfilePage() {
           { key: "isPublished", label: "Published", type: "bool" },
         ]}
         fields={[
-          { name: "category", label: "Category", type: "text", placeholder: "Resilience" },
-          { name: "sortOrder", label: "Sort order", type: "number" },
+          { name: "category", label: "Category", type: "select", options: categoryOptions },
           { name: "label", label: "Fact", type: "text", required: true, full: true, placeholder: "Recovery Time Objective" },
           { name: "value", label: "Value", type: "text", required: true, full: true, placeholder: "4 hours" },
           { name: "isPublished", label: "Published", type: "checkbox" },
         ]}
         saveAction={saveRiskItem}
         deleteAction={deleteRiskItem}
+        reorderAction={reorderRiskItems}
       />
     </div>
   );

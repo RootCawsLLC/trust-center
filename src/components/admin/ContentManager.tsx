@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Pencil, Trash2, X, Loader2, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Loader2, ChevronUp, ChevronDown, ChevronsUpDown, GripVertical } from "lucide-react";
 import { Pill } from "@/components/admin/ui";
 import { RichTextEditor } from "@/components/admin/RichTextEditor";
+import { cn } from "@/lib/utils";
 
 export type FieldDef = {
   name: string;
@@ -30,6 +31,7 @@ export function ContentManager({
   newLabel,
   saveAction,
   deleteAction,
+  reorderAction,
 }: {
   items: Item[];
   columns: ColumnDef[];
@@ -37,14 +39,22 @@ export function ContentManager({
   newLabel: string;
   saveAction: (id: string | null, fd: FormData) => Promise<Result>;
   deleteAction: (id: string) => Promise<Result>;
+  // When provided, rows become drag-to-reorder (no numeric sort-order field
+  // needed) and this persists the new top-to-bottom order.
+  reorderAction?: (orderedIds: string[]) => Promise<Result>;
 }) {
   const [editing, setEditing] = useState<Item | null>(null);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sort, setSort] = useState<{ key: string; dir: "asc" | "desc" } | null>(null);
+  const [localOrder, setLocalOrder] = useState<Item[] | null>(null);
+  const [dragId, setDragId] = useState<string | null>(null);
   const router = useRouter();
 
-  const sortedItems = sort
+  const reorderable = Boolean(reorderAction);
+  // In reorder mode the persisted order is authoritative — ignore column sort.
+  const baseItems = reorderable ? localOrder ?? items : items;
+  const sortedItems = !reorderable && sort
     ? [...items].sort((a, b) => {
         const av = a[sort.key];
         const bv = b[sort.key];
@@ -53,10 +63,32 @@ export function ContentManager({
         else cmp = String(av ?? "").localeCompare(String(bv ?? ""), undefined, { numeric: true });
         return sort.dir === "asc" ? cmp : -cmp;
       })
-    : items;
+    : baseItems;
 
   function toggleSort(key: string) {
+    if (reorderable) return;
     setSort((s) => (s?.key === key ? { key, dir: s.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" }));
+  }
+
+  function onDrop(targetId: string) {
+    if (!reorderAction || !dragId || dragId === targetId) return;
+    const cur = [...(localOrder ?? items)];
+    const from = cur.findIndex((o) => o.id === dragId);
+    const to = cur.findIndex((o) => o.id === targetId);
+    setDragId(null);
+    if (from < 0 || to < 0) return;
+    const [moved] = cur.splice(from, 1);
+    cur.splice(to, 0, moved);
+    setLocalOrder(cur);
+    setError(null);
+    reorderAction(cur.map((o) => o.id)).then((res) => {
+      if (!res.ok) {
+        setError(res.error);
+        setLocalOrder(null);
+      } else {
+        router.refresh();
+      }
+    });
   }
 
   async function onDelete(item: Item) {
@@ -69,7 +101,14 @@ export function ContentManager({
 
   return (
     <div>
-      <div className="mb-4 flex justify-end">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        {reorderable ? (
+          <p className="flex items-center gap-1.5 text-xs text-ink-faint">
+            <GripVertical size={13} className="text-slate-400" /> Drag rows to reorder — the order is saved and drives the public site.
+          </p>
+        ) : (
+          <span />
+        )}
         <button className="btn-primary" onClick={() => setCreating(true)}>
           <Plus size={16} /> {newLabel}
         </button>
@@ -86,16 +125,21 @@ export function ContentManager({
           <table className="w-full text-sm">
             <thead className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-wide text-ink-faint">
               <tr>
+                {reorderable && <th className="w-8 px-2 py-2.5"></th>}
                 {columns.map((c) => (
                   <th key={c.key} className="px-4 py-2.5 font-medium">
-                    <button onClick={() => toggleSort(c.key)} className="inline-flex items-center gap-1 hover:text-ink">
-                      {c.label}
-                      {sort?.key === c.key ? (
-                        sort.dir === "asc" ? <ChevronUp size={13} /> : <ChevronDown size={13} />
-                      ) : (
-                        <ChevronsUpDown size={13} className="text-slate-300" />
-                      )}
-                    </button>
+                    {reorderable ? (
+                      <span>{c.label}</span>
+                    ) : (
+                      <button onClick={() => toggleSort(c.key)} className="inline-flex items-center gap-1 hover:text-ink">
+                        {c.label}
+                        {sort?.key === c.key ? (
+                          sort.dir === "asc" ? <ChevronUp size={13} /> : <ChevronDown size={13} />
+                        ) : (
+                          <ChevronsUpDown size={13} className="text-slate-300" />
+                        )}
+                      </button>
+                    )}
                   </th>
                 ))}
                 <th className="px-4 py-2.5"></th>
@@ -103,7 +147,19 @@ export function ContentManager({
             </thead>
             <tbody className="divide-y divide-slate-100">
               {sortedItems.map((item) => (
-                <tr key={item.id} className="align-top">
+                <tr
+                  key={item.id}
+                  className={cn("align-top", reorderable && dragId === item.id && "opacity-50")}
+                  draggable={reorderable}
+                  onDragStart={reorderable ? () => setDragId(item.id) : undefined}
+                  onDragOver={reorderable ? (e) => e.preventDefault() : undefined}
+                  onDrop={reorderable ? () => onDrop(item.id) : undefined}
+                >
+                  {reorderable && (
+                    <td className="px-2 py-3">
+                      <GripVertical size={15} className="cursor-grab text-slate-400" />
+                    </td>
+                  )}
                   {columns.map((c) => (
                     <td key={c.key} className="px-4 py-3 text-ink-soft">
                       <Cell value={item[c.key]} type={c.type} />

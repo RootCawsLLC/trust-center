@@ -477,6 +477,23 @@ model Integration {
   updatedAt DateTime @updatedAt
 }
 
+// Admin-managed controlled vocabularies (the "Attribute Manager"). Each row is
+// one option for one taxonomy, e.g. taxonomy="risk.category" value="Resilience".
+// Drives the dropdowns/multi-selects across the admin forms so repeated values
+// aren't free text. `taxonomy` keys are registered in src/lib/taxonomy.ts.
+model TaxonomyOption {
+  id        String   @id @default(cuid())
+  taxonomy  String
+  value     String
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([taxonomy, value])
+  @@index([taxonomy])
+}
+
 // Light ticketing: user questions the assistant can't answer, plus manual entries.
 model Ticket {
   id                  String   @id @default(cuid())

@@ -25,6 +25,7 @@ import {
   UsersRound,
   Plug,
   LifeBuoy,
+  Tags,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -46,6 +47,7 @@ const NAV = [
   { href: "/admin/users", label: "Users", icon: Users, ownerOnly: true },
   { href: "/admin/groups", label: "Groups", icon: UsersRound, ownerOnly: true },
   { href: "/admin/integrations", label: "Integrations", icon: Plug },
+  { href: "/admin/attributes", label: "Attribute manager", icon: Tags },
   { href: "/admin/audit", label: "Audit log", icon: ScrollText },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
