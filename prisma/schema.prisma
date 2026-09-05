@@ -482,6 +482,23 @@ model Integration {
   updatedAt DateTime @updatedAt
 }
 
+// A saved chart on the Metrics page: a query-builder definition (dataset +
+// dimension + chart type + filters) shared across the admin team. Rendered by
+// computing it live against the current data.
+model SavedChart {
+  id          String   @id @default(cuid())
+  name        String
+  dataset     String // "requests" | "tickets"
+  dimension   String // e.g. "classification", "documentTitle", "month"
+  chartType   String   @default("bar") // bar | pie | table
+  filters     Json? // { from, to, ... }
+  sortOrder   Int      @default(0)
+  createdById String?
+  createdAt   DateTime @default(now())
+
+  @@index([sortOrder])
+}
+
 // Admin-managed controlled vocabularies (the "Attribute Manager"). Each row is
 // one option for one taxonomy, e.g. taxonomy="risk.category" value="Resilience".
 // Drives the dropdowns/multi-selects across the admin forms so repeated values

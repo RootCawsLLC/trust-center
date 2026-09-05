@@ -5,6 +5,9 @@ import { PageHeader, StatCard } from "@/components/admin/ui";
 import { FilterBar } from "@/components/admin/FilterBar";
 import { dateRangeWhere, firstStr } from "@/lib/filters";
 import { cn } from "@/lib/utils";
+import { DATASETS, CHART_TYPES, datasetDef, runChart } from "@/lib/metrics";
+import { QueryBuilder } from "./QueryBuilder";
+import { SavedChartCard } from "./SavedChartCard";
 import type { Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
@@ -62,6 +65,18 @@ export default async function MetricsPage({ searchParams }: { searchParams: SP }
   const byIndustry = tally(requests.flatMap((r) => docMap.get(r.documentId)?.industries ?? [])).slice(0, 8);
   const publicN = requests.filter((r) => r.documentVisibility === "PUBLIC").length;
 
+  // Custom saved charts (query-builder output), computed live against the data.
+  const savedCharts = await prisma.savedChart.findMany({ orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] });
+  const chartData = await Promise.all(
+    savedCharts.map(async (c) => {
+      const f = (c.filters as { from?: string | null; to?: string | null } | null) ?? {};
+      const rows = await runChart(c.dataset, c.dimension, { from: f.from ?? undefined, to: f.to ?? undefined });
+      const ds = datasetDef(c.dataset);
+      const dimLabel = ds?.dimensions.find((d) => d.key === c.dimension)?.label ?? c.dimension;
+      return { id: c.id, name: c.name, subtitle: `${ds?.label ?? c.dataset} · by ${dimLabel.toLowerCase()}`, chartType: c.chartType, rows };
+    }),
+  );
+
   return (
     <div>
       <PageHeader
@@ -79,7 +94,28 @@ export default async function MetricsPage({ searchParams }: { searchParams: SP }
         <StatCard label="Bulk ZIPs" value={zips} />
       </div>
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-2">
+      {/* Custom charts — build your own with the query builder, saved for the team. */}
+      <section className="mt-8">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-base font-bold tracking-tight text-ink">Custom charts</h2>
+            <p className="text-sm text-ink-faint">Build your own view of the data — pick a dataset, group-by and chart type. Saved charts are shared with the team.</p>
+          </div>
+          <QueryBuilder datasets={DATASETS as unknown as { key: string; label: string; dimensions: { key: string; label: string }[] }[]} chartTypes={CHART_TYPES as unknown as { key: string; label: string }[]} />
+        </div>
+        {chartData.length === 0 ? (
+          <div className="card p-8 text-center text-sm text-ink-faint">No custom charts yet. Click “New chart” to build one.</div>
+        ) : (
+          <div className="grid gap-6 lg:grid-cols-2">
+            {chartData.map((c) => (
+              <SavedChartCard key={c.id} id={c.id} name={c.name} subtitle={c.subtitle} chartType={c.chartType} rows={c.rows} />
+            ))}
+          </div>
+        )}
+      </section>
+
+      <h2 className="mt-8 text-base font-bold tracking-tight text-ink">Standard reports</h2>
+      <div className="mt-4 grid gap-6 lg:grid-cols-2">
         <Panel title="Requests over time">
           <Bars rows={months} accent="brand" />
         </Panel>
