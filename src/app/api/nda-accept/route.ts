@@ -4,8 +4,11 @@ import { prisma } from "@/lib/prisma";
 import { ndaAcceptSchema } from "@/lib/validation";
 import { logAudit, clientIpFromHeaders } from "@/lib/audit";
 import { resolveDownloadAccess } from "@/lib/access";
+import { limitByIp } from "@/lib/ratelimit";
 
 export async function POST(req: Request) {
+  const _rl = limitByIp(req, "nda_accept", 20, 60_000);
+  if (_rl) return _rl;
   const json = await req.json().catch(() => null);
   const parsed = ndaAcceptSchema.safeParse(json);
   if (!parsed.success) {

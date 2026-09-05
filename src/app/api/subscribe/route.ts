@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { limitByIp } from "@/lib/ratelimit";
 import { nanoid } from "nanoid";
 import { prisma } from "@/lib/prisma";
 import { matchCustomerByDomain } from "@/lib/salesforce";
@@ -11,6 +12,8 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // Public: a visitor subscribes to trust-center change notifications.
 export async function POST(req: Request) {
+  const _rl = limitByIp(req, "subscribe", 8, 60_000);
+  if (_rl) return _rl;
   const body = await req.json().catch(() => null);
   const email = String(body?.email ?? "").trim().toLowerCase().slice(0, 200);
   if (!EMAIL_RE.test(email)) return NextResponse.json({ error: "invalid_email" }, { status: 400 });

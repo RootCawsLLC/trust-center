@@ -10,10 +10,11 @@ export const dynamic = "force-dynamic";
 
 async function ledgerImmutable(): Promise<boolean> {
   // Count immutability triggers on the ledger tables (3 expected).
-  const rows = await prisma.$queryRawUnsafe<{ n: bigint }[]>(
-    `SELECT count(*)::bigint AS n FROM pg_trigger
-     WHERE tgname = 'trust_immutable_guard' AND NOT tgisinternal`,
-  );
+  // Tagged-template raw query (parameterized; no interpolation) — never the
+  // $queryRawUnsafe variant, which does no escaping.
+  const rows = await prisma.$queryRaw<{ n: bigint }[]>`
+    SELECT count(*)::bigint AS n FROM pg_trigger
+    WHERE tgname = 'trust_immutable_guard' AND NOT tgisinternal`;
   return Number(rows[0]?.n ?? 0) >= 3;
 }
 

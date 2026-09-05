@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { limitByIp } from "@/lib/ratelimit";
 import crypto from "node:crypto";
 import { nanoid } from "nanoid";
 import { prisma } from "@/lib/prisma";
@@ -8,6 +9,8 @@ import { logAudit, clientIpFromHeaders } from "@/lib/audit";
 import { grantExpiryDate } from "@/lib/settings";
 
 export async function POST(req: Request) {
+  const _rl = limitByIp(req, "nda_accept_bulk", 10, 60_000);
+  if (_rl) return _rl;
   const json = await req.json().catch(() => null);
   const parsed = bulkNdaAcceptSchema.safeParse(json);
   if (!parsed.success) {

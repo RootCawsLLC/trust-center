@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { limitByIp } from "@/lib/ratelimit";
 import { prisma } from "@/lib/prisma";
 import { matchCustomerByDomain } from "@/lib/salesforce";
 import { domainFromEmail } from "@/lib/utils";
@@ -9,6 +10,8 @@ export const dynamic = "force-dynamic";
 // Public: a visitor submits a request for assistance (from the assistant fallback
 // or a "contact us" action). Creates a ticket for the vendor team.
 export async function POST(req: Request) {
+  const _rl = limitByIp(req, "ticket", 8, 60_000);
+  if (_rl) return _rl;
   const body = await req.json().catch(() => null);
   const question = String(body?.question ?? "").trim().slice(0, 4000);
   const requesterName = String(body?.requesterName ?? "").trim().slice(0, 120) || null;

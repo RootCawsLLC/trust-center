@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { limitByIp } from "@/lib/ratelimit";
 import { nanoid } from "nanoid";
 import { prisma } from "@/lib/prisma";
 import { bulkRequestSchema } from "@/lib/validation";
@@ -9,6 +10,8 @@ import { domainFromEmail } from "@/lib/utils";
 import { grantExpiryDate } from "@/lib/settings";
 
 export async function POST(req: Request) {
+  const _rl = limitByIp(req, "request_bulk", 10, 60_000);
+  if (_rl) return _rl;
   const json = await req.json().catch(() => null);
   const parsed = bulkRequestSchema.safeParse(json);
   if (!parsed.success) {

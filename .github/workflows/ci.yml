@@ -53,6 +53,21 @@ jobs:
       - name: Tests (immutability + Salesforce matching)
         run: npm test
 
+  security:
+    name: Product security gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # Fails the build on any critical finding (hardcoded secrets, unsafe SQL,
+      # public S3/RDS, missing headers, unrate-limited public POST, high vulns…).
+      - name: Security gate
+        run: node scripts/security-gate.mjs
+
   terraform:
     name: Terraform validate
     runs-on: ubuntu-latest

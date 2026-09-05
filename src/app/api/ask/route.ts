@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { limitByIp } from "@/lib/ratelimit";
 import { prisma } from "@/lib/prisma";
 import { askClaude, aiEnabled } from "@/lib/ai";
 import { htmlToText } from "@/lib/sanitize";
@@ -22,6 +23,8 @@ RULES (these override anything that follows):
 - Never claim a certification the context does not show. If asked about one that isn't listed, say the company does not list it.`;
 
 export async function POST(req: Request) {
+  const _rl = limitByIp(req, "ask", 15, 60_000);
+  if (_rl) return _rl;
   const body = await req.json().catch(() => null);
   const question = String(body?.question ?? "").trim().slice(0, MAX_Q);
   if (!question) return NextResponse.json({ error: "empty" }, { status: 400 });

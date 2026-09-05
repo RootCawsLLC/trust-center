@@ -6,6 +6,8 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 import { prisma } from "./prisma";
 import { env, ssoEnabled } from "./env";
+import { allow } from "./ratelimit";
+import { clientIpFromHeaders } from "./audit";
 
 // Providers are assembled dynamically: credentials is always present (seeded
 // admin) and each SSO provider lights up only when its env vars are set.
@@ -16,10 +18,13 @@ const providers: NextAuthConfig["providers"] = [
       email: { label: "Email", type: "email" },
       password: { label: "Password", type: "password" },
     },
-    authorize: async (creds) => {
+    authorize: async (creds, request) => {
       const email = String(creds?.email ?? "").toLowerCase().trim();
       const password = String(creds?.password ?? "");
       if (!email || !password) return null;
+      // Brute-force / credential-stuffing protection: cap attempts per IP+email.
+      const ip = request instanceof Request ? clientIpFromHeaders(request.headers) || "unknown" : "unknown";
+      if (!allow(`login:${ip}:${email}`, 10, 5 * 60_000)) return null;
       const user = await prisma.user.findUnique({ where: { email } });
       if (!user || !user.passwordHash || !user.isActive) return null;
       const ok = await bcrypt.compare(password, user.passwordHash);
