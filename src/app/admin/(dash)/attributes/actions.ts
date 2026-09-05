@@ -2,16 +2,16 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireWrite } from "@/lib/session";
 import { logAudit } from "@/lib/audit";
 import { AuthzError } from "@/lib/rbac";
+import { requireModule } from "@/lib/permissions";
 import { taxonomyDef } from "@/lib/taxonomy";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 
 async function guard() {
   try {
-    return await requireWrite();
+    return await requireModule("attributes", "edit");
   } catch (e) {
     return e instanceof AuthzError ? e : new AuthzError();
   }

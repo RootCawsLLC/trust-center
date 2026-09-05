@@ -1,8 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/admin/ui";
-import { ContentManager } from "@/components/admin/ContentManager";
-import { saveGroup, deleteGroup } from "../access-actions";
 import { requireOwner } from "@/lib/session";
+import { MODULES } from "@/lib/permissions";
+import { GroupManager, type AdminGroup } from "./GroupManager";
 
 export const dynamic = "force-dynamic";
 
@@ -12,43 +12,26 @@ export default async function GroupsPage() {
     orderBy: { name: "asc" },
     include: { _count: { select: { users: true } } },
   });
+
+  const items: AdminGroup[] = groups.map((g) => ({
+    id: g.id,
+    name: g.name,
+    description: g.description ?? "",
+    defaultRole: g.defaultRole,
+    members: g._count.users,
+    permissions:
+      g.permissions && typeof g.permissions === "object" && !Array.isArray(g.permissions)
+        ? (g.permissions as Record<string, "none" | "view" | "edit">)
+        : {},
+  }));
+
   return (
     <div>
       <PageHeader
-        title="Groups"
-        description="Assign users to a group (Legal, Sales, InfoSec…) to inherit a default role. Per-user overrides are set on the Users page."
+        title="Groups & permissions"
+        description="Assign users to a group to inherit a default role, then fine-tune what each group can do per section — no access, view only, or edit."
       />
-      <ContentManager
-        newLabel="New group"
-        items={groups.map((g) => ({
-          id: g.id,
-          name: g.name,
-          description: g.description ?? "",
-          defaultRole: g.defaultRole,
-          members: g._count.users,
-        }))}
-        columns={[
-          { key: "name", label: "Group" },
-          { key: "defaultRole", label: "Default role" },
-          { key: "members", label: "Members" },
-        ]}
-        fields={[
-          { name: "name", label: "Name", type: "text", required: true, placeholder: "InfoSec" },
-          {
-            name: "defaultRole",
-            label: "Default role",
-            type: "select",
-            options: [
-              { value: "VIEWER", label: "Viewer" },
-              { value: "ADMIN", label: "Admin" },
-              { value: "OWNER", label: "Owner" },
-            ],
-          },
-          { name: "description", label: "Description", type: "text", full: true },
-        ]}
-        saveAction={saveGroup}
-        deleteAction={deleteGroup}
-      />
+      <GroupManager groups={items} modules={MODULES} />
     </div>
   );
 }

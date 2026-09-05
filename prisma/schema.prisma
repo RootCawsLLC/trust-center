@@ -461,6 +461,10 @@ model Group {
   name        String   @unique
   description String?
   defaultRole Role     @default(VIEWER)
+  // Per-module access matrix: { "<moduleKey>": "none" | "view" | "edit" }.
+  // Overlays the role default; owner-only modules stay OWNER-gated regardless.
+  // Members of the group inherit it (see src/lib/permissions.ts).
+  permissions Json?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

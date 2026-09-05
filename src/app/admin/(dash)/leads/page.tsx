@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { requireModuleView } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { PageHeader, Pill } from "@/components/admin/ui";
 import { FilterBar } from "@/components/admin/FilterBar";
@@ -17,6 +18,7 @@ export const dynamic = "force-dynamic";
 type SP = Promise<Record<string, string | string[] | undefined>>;
 
 export default async function LeadsPage({ searchParams }: { searchParams: SP }) {
+  await requireModuleView("leads");
   const sp = await searchParams;
   const q = firstStr(sp.q)?.trim();
   const from = firstStr(sp.from);

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { requireModuleView } from "@/lib/permissions";
 import { ssoEnabled, env } from "@/lib/env";
 import { PageHeader, Pill } from "@/components/admin/ui";
 import { CheckCircle2, Circle, ShieldCheck } from "lucide-react";
@@ -17,6 +18,7 @@ async function ledgerImmutable(): Promise<boolean> {
 }
 
 export default async function SettingsPage() {
+  await requireModuleView("settings");
   const immutable = await ledgerImmutable().catch(() => false);
   const settings = await getOrgSettings();
 

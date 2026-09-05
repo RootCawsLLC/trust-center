@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { requireModuleView } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { PageHeader, StatCard } from "@/components/admin/ui";
 import { FilterBar } from "@/components/admin/FilterBar";
@@ -25,6 +26,7 @@ function qs(base: Record<string, string>, from?: string, to?: string) {
 }
 
 export default async function MetricsPage({ searchParams }: { searchParams: SP }) {
+  await requireModuleView("metrics");
   const sp = await searchParams;
   const from = firstStr(sp.from);
   const to = firstStr(sp.to);

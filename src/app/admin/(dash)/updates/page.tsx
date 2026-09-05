@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { requireModuleView } from "@/lib/permissions";
 import { PageHeader } from "@/components/admin/ui";
 import { ContentManager } from "@/components/admin/ContentManager";
 import { saveUpdate, deleteUpdate } from "../content-actions";
@@ -6,6 +7,7 @@ import { saveUpdate, deleteUpdate } from "../content-actions";
 export const dynamic = "force-dynamic";
 
 export default async function UpdatesPage() {
+  await requireModuleView("updates");
   const items = await prisma.trustUpdate.findMany({ orderBy: { publishedAt: "desc" } });
   return (
     <div>

@@ -2,15 +2,16 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireWrite } from "@/lib/session";
 import { logAudit } from "@/lib/audit";
 import { AuthzError } from "@/lib/rbac";
+import { requireModule } from "@/lib/permissions";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 
-async function guard() {
+// The `section` here doubles as the module key (risk-profile, certifications…).
+async function guard(moduleKey: string) {
   try {
-    return await requireWrite();
+    return await requireModule(moduleKey, "edit");
   } catch (e) {
     return e instanceof AuthzError ? e : new AuthzError();
   }
@@ -24,7 +25,7 @@ async function reorder(
   orderedIds: string[],
   apply: (id: string, sortOrder: number) => Promise<unknown>,
 ): Promise<ActionResult> {
-  const g = await guard();
+  const g = await guard(section);
   if (g instanceof Error) return { ok: false, error: g.message };
   await prisma.$transaction(orderedIds.map((id, i) => apply(id, i + 1) as never));
   await logAudit({

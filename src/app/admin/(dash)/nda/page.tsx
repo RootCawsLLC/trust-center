@@ -1,10 +1,12 @@
 import { prisma } from "@/lib/prisma";
+import { requireModuleView } from "@/lib/permissions";
 import { PageHeader } from "@/components/admin/ui";
 import { NdaManager, type AdminNda } from "./NdaManager";
 
 export const dynamic = "force-dynamic";
 
 export default async function NdaPage() {
+  await requireModuleView("nda");
   const templates = await prisma.ndaTemplate.findMany({
     orderBy: [{ isDefault: "desc" }, { name: "asc" }],
     include: { _count: { select: { documents: true, acceptances: true } } },
@@ -15,6 +17,7 @@ export default async function NdaPage() {
     name: t.name,
     bodyMarkdown: t.bodyMarkdown,
     contentHtml: t.contentHtml,
+    fileName: t.fileName,
     isDefault: t.isDefault,
     isActive: t.isActive,
     documentCount: t._count.documents,

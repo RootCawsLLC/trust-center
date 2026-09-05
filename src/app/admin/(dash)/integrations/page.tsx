@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { requireModuleView } from "@/lib/permissions";
 import { PageHeader } from "@/components/admin/ui";
 import { IntegrationCard } from "./IntegrationCard";
 import { Info } from "lucide-react";
@@ -6,6 +7,7 @@ import { Info } from "lucide-react";
 export const dynamic = "force-dynamic";
 
 export default async function IntegrationsPage() {
+  await requireModuleView("integrations");
   const integrations = await prisma.integration.findMany({ orderBy: [{ category: "asc" }, { name: "asc" }] });
 
   return (

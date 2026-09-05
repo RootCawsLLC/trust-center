@@ -1,13 +1,28 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { nanoid } from "nanoid";
 import { prisma } from "@/lib/prisma";
-import { requireWrite } from "@/lib/session";
 import { logAudit } from "@/lib/audit";
 import { AuthzError } from "@/lib/rbac";
+import { requireModule } from "@/lib/permissions";
 import { sanitizeRichText, htmlToText } from "@/lib/sanitize";
+import { putObject } from "@/lib/storage";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
+
+const MAX_UPLOAD = 25 * 1024 * 1024; // 25 MB
+
+async function storeNdaFile(fd: FormData): Promise<{ key: string; name: string; mime: string } | null> {
+  const f = fd.get("file");
+  if (!(f instanceof File) || f.size === 0) return null;
+  if (f.size > MAX_UPLOAD) throw new Error("File exceeds 25 MB.");
+  const buf = Buffer.from(await f.arrayBuffer());
+  const safeName = f.name.replace(/[^\w.\- ]+/g, "_").slice(0, 200);
+  const key = `nda/${nanoid(16)}-${safeName}`;
+  await putObject(key, buf, f.type || "application/octet-stream");
+  return { key, name: safeName, mime: f.type || "application/octet-stream" };
+}
 
 function parse(fd: FormData) {
   const contentHtml = sanitizeRichText(String(fd.get("contentHtml") ?? ""));
@@ -30,7 +45,7 @@ function parse(fd: FormData) {
 
 async function guard() {
   try {
-    return await requireWrite();
+    return await requireModule("nda", "edit");
   } catch (e) {
     throw e instanceof AuthzError ? e : new AuthzError();
   }
@@ -49,6 +64,13 @@ export async function saveNda(id: string | null, fd: FormData): Promise<ActionRe
   }
   const data = parsed.data;
 
+  let file: Awaited<ReturnType<typeof storeNdaFile>> = null;
+  try {
+    file = await storeNdaFile(fd);
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Upload failed." };
+  }
+
   // Only one default at a time.
   if (data.isDefault) {
     await prisma.ndaTemplate.updateMany({
@@ -56,6 +78,10 @@ export async function saveNda(id: string | null, fd: FormData): Promise<ActionRe
       data: { isDefault: false },
     });
   }
+
+  const fileFields = file
+    ? { fileStorageKey: file.key, fileName: file.name, fileMimeType: file.mime }
+    : {};
 
   if (id) {
     await prisma.ndaTemplate.update({
@@ -66,6 +92,7 @@ export async function saveNda(id: string | null, fd: FormData): Promise<ActionRe
         contentHtml: data.contentHtml,
         isDefault: Boolean(data.isDefault),
         isActive: data.isActive ?? true,
+        ...fileFields,
       },
     });
   } else {
@@ -76,6 +103,7 @@ export async function saveNda(id: string | null, fd: FormData): Promise<ActionRe
         contentHtml: data.contentHtml,
         isDefault: Boolean(data.isDefault),
         isActive: data.isActive ?? true,
+        ...fileFields,
       },
     });
   }

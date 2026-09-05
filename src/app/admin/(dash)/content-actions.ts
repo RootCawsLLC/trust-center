@@ -3,9 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { nanoid } from "nanoid";
 import { prisma } from "@/lib/prisma";
-import { requireWrite } from "@/lib/session";
 import { logAudit } from "@/lib/audit";
 import { AuthzError } from "@/lib/rbac";
+import { requireModule } from "@/lib/permissions";
 import { sanitizeRichText } from "@/lib/sanitize";
 import { putObject } from "@/lib/storage";
 
@@ -29,9 +29,10 @@ async function storeFile(
   return { key, name: safeName, mime: f.type || "application/octet-stream" };
 }
 
-async function guard() {
+// Module-aware write guard: requires "edit" on the given admin module.
+async function guard(moduleKey: string) {
   try {
-    return await requireWrite();
+    return await requireModule(moduleKey, "edit");
   } catch (e) {
     return e instanceof AuthzError ? e : new AuthzError();
   }
@@ -46,7 +47,7 @@ function bool(fd: FormData, k: string) {
 
 // ---- Subprocessors ----
 export async function saveSubprocessor(id: string | null, fd: FormData): Promise<ActionResult> {
-  const g = await guard();
+  const g = await guard("subprocessors");
   if (g instanceof Error) return { ok: false, error: g.message };
   const name = s(fd, "name");
   const purpose = s(fd, "purpose");
@@ -70,7 +71,7 @@ export async function saveSubprocessor(id: string | null, fd: FormData): Promise
   return { ok: true };
 }
 export async function deleteSubprocessor(id: string): Promise<ActionResult> {
-  const g = await guard();
+  const g = await guard("subprocessors");
   if (g instanceof Error) return { ok: false, error: g.message };
   await prisma.subprocessor.delete({ where: { id } });
   await logAudit({ action: "SUBPROCESSOR_DELETE", actorUserId: g.user.id, actorEmail: g.user.email, targetType: "Subprocessor", targetId: id });
@@ -135,7 +136,7 @@ function rowsToSubs(rows: string[][]): ParsedSub[] {
 export async function parseSubprocessorFile(
   fd: FormData,
 ): Promise<{ ok: true; rows: ParsedSub[]; note: string } | { ok: false; error: string }> {
-  const g = await guard();
+  const g = await guard("subprocessors");
   if (g instanceof Error) return { ok: false, error: g.message };
   const f = fd.get("file");
   if (!(f instanceof File) || f.size === 0) return { ok: false, error: "Choose a file to import." };
@@ -176,7 +177,7 @@ export async function parseSubprocessorFile(
 }
 
 export async function importSubprocessors(rows: ParsedSub[]): Promise<ActionResult> {
-  const g = await guard();
+  const g = await guard("subprocessors");
   if (g instanceof Error) return { ok: false, error: g.message };
   const clean = rows.filter((r) => r.name.trim()).slice(0, 500);
   if (clean.length === 0) return { ok: false, error: "Nothing to import." };
@@ -208,7 +209,7 @@ function slugify(s: string) {
 }
 
 export async function saveCertification(id: string | null, fd: FormData): Promise<ActionResult> {
-  const g = await guard();
+  const g = await guard("certifications");
   if (g instanceof Error) return { ok: false, error: g.message };
   const framework = s(fd, "framework");
   if (!framework) return { ok: false, error: "Framework name is required (e.g. SOC 2)." };
@@ -249,7 +250,7 @@ export async function saveCertification(id: string | null, fd: FormData): Promis
 }
 
 export async function deleteCertification(id: string): Promise<ActionResult> {
-  const g = await guard();
+  const g = await guard("certifications");
   if (g instanceof Error) return { ok: false, error: g.message };
   await prisma.certification.delete({ where: { id } });
   await logAudit({ action: "CERT_DELETE", actorUserId: g.user.id, actorEmail: g.user.email, targetType: "Certification", targetId: id });
@@ -260,7 +261,7 @@ export async function deleteCertification(id: string): Promise<ActionResult> {
 
 // ---- Risk profile ----
 export async function saveRiskItem(id: string | null, fd: FormData): Promise<ActionResult> {
-  const g = await guard();
+  const g = await guard("risk-profile");
   if (g instanceof Error) return { ok: false, error: g.message };
   const label = s(fd, "label");
   const value = s(fd, "value");
@@ -282,7 +283,7 @@ export async function saveRiskItem(id: string | null, fd: FormData): Promise<Act
   return { ok: true };
 }
 export async function deleteRiskItem(id: string): Promise<ActionResult> {
-  const g = await guard();
+  const g = await guard("risk-profile");
   if (g instanceof Error) return { ok: false, error: g.message };
   await prisma.riskProfileItem.delete({ where: { id } });
   await logAudit({ action: "RISK_DELETE", actorUserId: g.user.id, actorEmail: g.user.email, targetType: "RiskProfileItem", targetId: id });
@@ -293,7 +294,7 @@ export async function deleteRiskItem(id: string): Promise<ActionResult> {
 
 // ---- Shared responsibility / RACI ----
 export async function saveRaci(id: string | null, fd: FormData): Promise<ActionResult> {
-  const g = await guard();
+  const g = await guard("shared-responsibility");
   if (g instanceof Error) return { ok: false, error: g.message };
   const area = s(fd, "area");
   if (!area) return { ok: false, error: "Responsibility area is required." };
@@ -316,7 +317,7 @@ export async function saveRaci(id: string | null, fd: FormData): Promise<ActionR
   return { ok: true };
 }
 export async function deleteRaci(id: string): Promise<ActionResult> {
-  const g = await guard();
+  const g = await guard("shared-responsibility");
   if (g instanceof Error) return { ok: false, error: g.message };
   await prisma.raciItem.delete({ where: { id } });
   await logAudit({ action: "RACI_DELETE", actorUserId: g.user.id, actorEmail: g.user.email, targetType: "RaciItem", targetId: id });
@@ -327,7 +328,7 @@ export async function deleteRaci(id: string): Promise<ActionResult> {
 
 // ---- Compliance calendar ----
 export async function saveEvent(id: string | null, fd: FormData): Promise<ActionResult> {
-  const g = await guard();
+  const g = await guard("compliance-calendar");
   if (g instanceof Error) return { ok: false, error: g.message };
   const title = s(fd, "title");
   const window = s(fd, "window");
@@ -352,7 +353,7 @@ export async function saveEvent(id: string | null, fd: FormData): Promise<Action
   return { ok: true };
 }
 export async function deleteEvent(id: string): Promise<ActionResult> {
-  const g = await guard();
+  const g = await guard("compliance-calendar");
   if (g instanceof Error) return { ok: false, error: g.message };
   await prisma.complianceEvent.delete({ where: { id } });
   await logAudit({ action: "EVENT_DELETE", actorUserId: g.user.id, actorEmail: g.user.email, targetType: "ComplianceEvent", targetId: id });
@@ -363,7 +364,7 @@ export async function deleteEvent(id: string): Promise<ActionResult> {
 
 // ---- Knowledge base ----
 export async function saveArticle(id: string | null, fd: FormData): Promise<ActionResult> {
-  const g = await guard();
+  const g = await guard("knowledge");
   if (g instanceof Error) return { ok: false, error: g.message };
   const title = s(fd, "title");
   if (!title) return { ok: false, error: "Title is required." };
@@ -399,7 +400,7 @@ export async function saveArticle(id: string | null, fd: FormData): Promise<Acti
   return { ok: true };
 }
 export async function deleteArticle(id: string): Promise<ActionResult> {
-  const g = await guard();
+  const g = await guard("knowledge");
   if (g instanceof Error) return { ok: false, error: g.message };
   await prisma.knowledgeArticle.delete({ where: { id } });
   await logAudit({ action: "ARTICLE_DELETE", actorUserId: g.user.id, actorEmail: g.user.email, targetType: "KnowledgeArticle", targetId: id });
@@ -410,7 +411,7 @@ export async function deleteArticle(id: string): Promise<ActionResult> {
 
 // ---- Updates ----
 export async function saveUpdate(id: string | null, fd: FormData): Promise<ActionResult> {
-  const g = await guard();
+  const g = await guard("updates");
   if (g instanceof Error) return { ok: false, error: g.message };
   const title = s(fd, "title");
   const contentHtml = sanitizeRichText(s(fd, "contentHtml"));
@@ -433,7 +434,7 @@ export async function saveUpdate(id: string | null, fd: FormData): Promise<Actio
   return { ok: true };
 }
 export async function deleteUpdate(id: string): Promise<ActionResult> {
-  const g = await guard();
+  const g = await guard("updates");
   if (g instanceof Error) return { ok: false, error: g.message };
   await prisma.trustUpdate.delete({ where: { id } });
   await logAudit({ action: "UPDATE_DELETE", actorUserId: g.user.id, actorEmail: g.user.email, targetType: "TrustUpdate", targetId: id });

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { requireModuleView } from "@/lib/permissions";
 import { PageHeader, Pill } from "@/components/admin/ui";
 import { SortHeader } from "@/components/admin/SortHeader";
 import { formatDate } from "@/lib/utils";
@@ -22,6 +23,7 @@ const ACTION_TONE: Record<string, "slate" | "amber" | "emerald" | "red"> = {
 };
 
 export default async function AuditPage({ searchParams }: { searchParams: SP }) {
+  await requireModuleView("audit");
   const sp = await searchParams;
   const entries = await prisma.auditLog.findMany({
     orderBy: orderByFromParams(firstStr(sp.sort), firstStr(sp.dir), AUDIT_SORTS, { createdAt: "desc" }),

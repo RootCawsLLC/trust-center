@@ -56,13 +56,24 @@ export function AdminNav({
   role,
   email,
   name,
+  levels,
 }: {
   role?: string;
   email?: string | null;
   name?: string | null;
+  levels?: Record<string, string>;
 }) {
   const pathname = usePathname();
-  const isOwner = role === "OWNER";
+
+  // A nav item is visible when its module grants at least "view". The module key
+  // is the path segment after /admin/ (the dashboard root has none → always on).
+  function canView(href: string): boolean {
+    if (href === "/admin") return true;
+    const mod = href.slice("/admin/".length);
+    if (!levels) return true; // no map passed → show all (fail-open only pre-wire)
+    const lvl = levels[mod];
+    return lvl === "view" || lvl === "edit";
+  }
 
   return (
     <div className="flex h-full flex-col">
@@ -70,8 +81,8 @@ export function AdminNav({
         <span className="text-sm font-semibold text-ink">Trust Center</span>
         <p className="text-xs text-ink-faint">Vendor admin</p>
       </div>
-      <nav className="flex-1 space-y-0.5 px-2">
-        {NAV.filter((i) => !i.ownerOnly || isOwner).map((item) => {
+      <nav className="flex-1 space-y-0.5 overflow-y-auto px-2">
+        {NAV.filter((i) => canView(i.href)).map((item) => {
           const active = item.exact
             ? pathname === item.href
             : pathname.startsWith(item.href);

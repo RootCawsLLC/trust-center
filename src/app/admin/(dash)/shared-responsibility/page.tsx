@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { requireModuleView } from "@/lib/permissions";
 import { PageHeader } from "@/components/admin/ui";
 import { ContentManager } from "@/components/admin/ContentManager";
 import { saveRaci, deleteRaci } from "../content-actions";
@@ -8,6 +9,7 @@ import { getTaxonomySelectOptions } from "@/lib/taxonomy";
 export const dynamic = "force-dynamic";
 
 export default async function SharedResponsibilityPage() {
+  await requireModuleView("shared-responsibility");
   const [items, areaOptions] = await Promise.all([
     prisma.raciItem.findMany({ orderBy: { sortOrder: "asc" } }),
     getTaxonomySelectOptions("raci.area"),

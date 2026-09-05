@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { requireModuleView } from "@/lib/permissions";
 import { PageHeader } from "@/components/admin/ui";
 import { TAXONOMIES } from "@/lib/taxonomy";
 import { AttributeManager, type Option } from "./AttributeManager";
@@ -6,6 +7,7 @@ import { AttributeManager, type Option } from "./AttributeManager";
 export const dynamic = "force-dynamic";
 
 export default async function AttributesPage() {
+  await requireModuleView("attributes");
   const rows = await prisma.taxonomyOption.findMany({
     orderBy: [{ taxonomy: "asc" }, { sortOrder: "asc" }, { value: "asc" }],
   });

@@ -2,9 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireWrite } from "@/lib/session";
 import { logAudit } from "@/lib/audit";
 import { AuthzError } from "@/lib/rbac";
+import { requireModule } from "@/lib/permissions";
 import { matchCustomerByDomain } from "@/lib/salesforce";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
@@ -14,7 +14,7 @@ const PRIORITIES = ["low", "normal", "high", "urgent"];
 
 async function guard() {
   try {
-    return await requireWrite();
+    return await requireModule("tickets", "edit");
   } catch (e) {
     return e instanceof AuthzError ? e : new AuthzError();
   }

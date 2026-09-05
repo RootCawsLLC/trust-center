@@ -1,4 +1,5 @@
 import { requireSession } from "@/lib/session";
+import { getEffectivePermissions } from "@/lib/permissions";
 import { AdminNav } from "./AdminNav";
 
 export const dynamic = "force-dynamic";
@@ -9,6 +10,7 @@ export default async function AdminLayout({
   children: React.ReactNode;
 }) {
   const session = await requireSession();
+  const perms = await getEffectivePermissions();
 
   return (
     <div className="flex min-h-screen bg-slate-50">
@@ -18,6 +20,7 @@ export default async function AdminLayout({
             role={session.user.role}
             email={session.user.email}
             name={session.user.name}
+            levels={perms.levels}
           />
         </div>
       </aside>

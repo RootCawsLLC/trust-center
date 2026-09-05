@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { requireModuleView } from "@/lib/permissions";
 import { PageHeader } from "@/components/admin/ui";
 import { ContentManager } from "@/components/admin/ContentManager";
 import { saveSubprocessor, deleteSubprocessor } from "../content-actions";
@@ -8,6 +9,7 @@ import { SubprocessorImport } from "./SubprocessorImport";
 export const dynamic = "force-dynamic";
 
 export default async function SubprocessorsPage() {
+  await requireModuleView("subprocessors");
   const items = await prisma.subprocessor.findMany({ orderBy: { sortOrder: "asc" } });
   return (
     <div>

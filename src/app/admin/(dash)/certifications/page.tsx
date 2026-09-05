@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { requireModuleView } from "@/lib/permissions";
 import { PageHeader } from "@/components/admin/ui";
 import { ContentManager } from "@/components/admin/ContentManager";
 import { saveCertification, deleteCertification } from "../content-actions";
@@ -8,6 +9,7 @@ import { getTaxonomySelectOptions } from "@/lib/taxonomy";
 export const dynamic = "force-dynamic";
 
 export default async function CertificationsPage() {
+  await requireModuleView("certifications");
   const [items, frameworkOptions] = await Promise.all([
     prisma.certification.findMany({ orderBy: { sortOrder: "asc" } }),
     getTaxonomySelectOptions("certification.framework"),

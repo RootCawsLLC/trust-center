@@ -12,6 +12,7 @@ export type AdminNda = {
   name: string;
   bodyMarkdown: string;
   contentHtml: string | null;
+  fileName: string | null;
   isDefault: boolean;
   isActive: boolean;
   documentCount: number;
@@ -155,6 +156,16 @@ function NdaForm({
             <p className="mt-1 text-xs text-ink-faint">
               Formatting is preserved for signers. The accepted text is hashed into
               each acceptance record.
+            </p>
+          </div>
+          <div>
+            <label className="label">Official copy (optional)</label>
+            <input type="file" name="file" accept=".pdf,.doc,.docx" className="input py-1.5" />
+            <p className="mt-1 text-xs text-ink-faint">
+              {tmpl?.fileName ? (
+                <>Current: {tmpl.fileName} — upload to replace. </>
+              ) : null}
+              Attach your own signed NDA (PDF/DOCX). Signers can download it alongside the click-through text above.
             </p>
           </div>
           <div className="flex gap-6">

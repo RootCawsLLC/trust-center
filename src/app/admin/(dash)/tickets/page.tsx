@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { requireModuleView } from "@/lib/permissions";
 import { PageHeader } from "@/components/admin/ui";
 import { FilterBar } from "@/components/admin/FilterBar";
 import { TicketManager, type AdminTicket, type Assignee } from "./TicketManager";
@@ -9,6 +10,7 @@ export const dynamic = "force-dynamic";
 type SP = Promise<Record<string, string | string[] | undefined>>;
 
 export default async function TicketsPage({ searchParams }: { searchParams: SP }) {
+  await requireModuleView("tickets");
   const sp = await searchParams;
   const status = firstStr(sp.status);
   const q = firstStr(sp.q)?.trim();

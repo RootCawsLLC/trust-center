@@ -2,9 +2,31 @@ import { PrismaClient } from "@prisma/client";
 const p = new PrismaClient();
 
 const groups = [
-  { name: "InfoSec", description: "Security & compliance team", defaultRole: "ADMIN" },
-  { name: "Legal", description: "Legal & privacy", defaultRole: "ADMIN" },
-  { name: "Sales", description: "Sales & customer-facing", defaultRole: "VIEWER" },
+  // InfoSec: full admin, no custom matrix (inherits ADMIN edit everywhere).
+  { name: "InfoSec", description: "Security & compliance team", defaultRole: "ADMIN", permissions: {} },
+  // Legal: edits the legal/document surface, read-only elsewhere.
+  {
+    name: "Legal",
+    description: "Legal & privacy",
+    defaultRole: "ADMIN",
+    permissions: {
+      documents: "edit", certifications: "edit", nda: "edit", "shared-responsibility": "edit",
+      "risk-profile": "view", tickets: "view", metrics: "view", requests: "view",
+      subprocessors: "view", knowledge: "view", updates: "view",
+      settings: "none", audit: "none", attributes: "none", integrations: "none", leads: "none",
+    },
+  },
+  // Sales: works tickets & leads, can view the public content, nothing sensitive.
+  {
+    name: "Sales",
+    description: "Sales & customer-facing",
+    defaultRole: "VIEWER",
+    permissions: {
+      tickets: "edit", leads: "view", requests: "view", documents: "view",
+      certifications: "view", knowledge: "view", metrics: "view",
+      settings: "none", audit: "none", attributes: "none", nda: "none", integrations: "none",
+    },
+  },
 ];
 
 const integrations = [

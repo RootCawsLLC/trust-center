@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { requireModuleView } from "@/lib/permissions";
 import { PageHeader } from "@/components/admin/ui";
 import { FilterBar } from "@/components/admin/FilterBar";
 import { SavedViews } from "@/components/admin/SavedViews";
@@ -13,6 +14,7 @@ export const dynamic = "force-dynamic";
 type SP = Promise<Record<string, string | string[] | undefined>>;
 
 export default async function DocumentsPage({ searchParams }: { searchParams: SP }) {
+  await requireModuleView("documents");
   const sp = await searchParams;
   const q = firstStr(sp.q)?.trim();
   const category = firstStr(sp.category);
