@@ -484,6 +484,57 @@ model Integration {
   updatedAt DateTime @updatedAt
 }
 
+// Curated Q&A the vendor maintains — the grounding for questionnaire answers
+// (and a governed source of truth). Owned, tagged, review-tracked.
+model AnswerLibraryEntry {
+  id             String    @id @default(cuid())
+  question       String    @db.Text
+  answer         String    @db.Text
+  category       String    @default("General")
+  tags           String[]  @default([])
+  ownerEmail     String?
+  confidence     String    @default("high") // high | medium | low
+  lastReviewedAt DateTime?
+  isPublished    Boolean   @default(true) // usable for grounding
+  sortOrder      Int       @default(0)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([category])
+}
+
+// An inbound security questionnaire being answered for a prospect/customer.
+model Questionnaire {
+  id             String   @id @default(cuid())
+  name           String
+  requesterName  String?
+  requesterEmail String?
+  status         String   @default("in-progress") // in-progress | complete
+  createdById    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  items QuestionnaireItem[]
+
+  @@index([createdAt])
+}
+
+model QuestionnaireItem {
+  id              String   @id @default(cuid())
+  questionnaireId String
+  questionnaire   Questionnaire @relation(fields: [questionnaireId], references: [id], onDelete: Cascade)
+  rowIndex        Int
+  question        String   @db.Text
+  draftAnswer     String?  @db.Text
+  finalAnswer     String?  @db.Text
+  status          String   @default("draft") // draft | approved | skipped
+  matchedEntryId  String?
+  confidence      String? // high | medium | low | none
+  createdAt       DateTime @default(now())
+
+  @@index([questionnaireId])
+}
+
 // Approval decision for a private-document request (mutable operational table
 // keyed to the immutable DownloadRequest). In "manual" approval mode the grant
 // is only issued once this is approved; domain rules can auto-approve/deny.

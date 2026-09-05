@@ -21,6 +21,8 @@ export const MODULES: ModuleDef[] = [
   { key: "leads", label: "Sales leads" },
   { key: "subscribers", label: "Subscribers" },
   { key: "tickets", label: "Tickets" },
+  { key: "questionnaires", label: "Questionnaires" },
+  { key: "answers", label: "Answer library" },
   { key: "nda", label: "NDA templates" },
   { key: "subprocessors", label: "Subprocessors" },
   { key: "knowledge", label: "Knowledge base" },

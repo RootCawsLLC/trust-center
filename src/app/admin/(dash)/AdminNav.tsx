@@ -28,6 +28,8 @@ import {
   Tags,
   Bell,
   KeyRound,
+  ClipboardList,
+  Library,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -44,6 +46,8 @@ const NAV = [
   { href: "/admin/leads", label: "Sales leads", icon: Target },
   { href: "/admin/subscribers", label: "Subscribers", icon: Bell },
   { href: "/admin/tickets", label: "Tickets", icon: LifeBuoy },
+  { href: "/admin/questionnaires", label: "Questionnaires", icon: ClipboardList },
+  { href: "/admin/answers", label: "Answer library", icon: Library },
   { href: "/admin/nda", label: "NDA templates", icon: FileSignature },
   { href: "/admin/subprocessors", label: "Subprocessors", icon: Network },
   { href: "/admin/knowledge", label: "Knowledge base", icon: BookOpen },
