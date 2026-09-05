@@ -30,8 +30,10 @@ export async function GET(
   const request = grant.downloadRequest;
   const doc = request.document;
 
-  // Defense in depth: a private doc must have a recorded NDA acceptance.
-  if (doc.visibility === "PRIVATE" && !request.ndaAcceptance) {
+  // Defense in depth: a private doc must have a recorded NDA acceptance — unless
+  // the NDA was not required for this request (an active customer whose MSA
+  // covers confidentiality, when the vendor enabled that bypass).
+  if (doc.visibility === "PRIVATE" && request.ndaRequired && !request.ndaAcceptance) {
     return NextResponse.json({ error: "nda_required" }, { status: 403 });
   }
 

@@ -369,6 +369,7 @@ model OrgSettings {
   grantTtlMinutes   Int      @default(15)
   approvalMode      String   @default("auto") // auto = instant grant; manual = require admin approval for private docs
   watermarkEnabled  Boolean  @default(true) // stamp a per-viewer watermark on downloaded PDFs
+  customerNdaBypass Boolean  @default(false) // active SF customers skip the click-through NDA (covered by their MSA)
   retentionNote     String?  @db.Text
   updatedAt         DateTime @updatedAt
 }

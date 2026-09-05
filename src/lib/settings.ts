@@ -13,6 +13,7 @@ export type ResolvedSettings = {
   grantTtlMinutes: number;
   approvalMode: "auto" | "manual";
   watermarkEnabled: boolean;
+  customerNdaBypass: boolean;
   retentionNote: string | null;
 };
 
@@ -44,6 +45,7 @@ export async function getOrgSettings(): Promise<ResolvedSettings> {
     grantTtlMinutes: row?.grantTtlMinutes ?? 15,
     approvalMode: row?.approvalMode === "manual" ? "manual" : "auto",
     watermarkEnabled: row?.watermarkEnabled ?? true,
+    customerNdaBypass: row?.customerNdaBypass ?? false,
     retentionNote: row?.retentionNote ?? null,
   };
 }

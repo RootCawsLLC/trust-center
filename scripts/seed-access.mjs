@@ -30,7 +30,7 @@ const groups = [
 ];
 
 const integrations = [
-  { key: "salesforce", name: "Salesforce", category: "CRM", note: "Customer/lead matching. Swap the mock table for a real SOQL query." },
+  { key: "salesforce", name: "Salesforce", category: "CRM", note: "Customer/lead matching. Swap the mock table for a real SOQL query. Enables the optional 'active customers skip the NDA' policy (their MSA covers confidentiality)." },
   { key: "google-drive", name: "Google Drive", category: "Storage", note: "Sync documents from a shared drive." },
   { key: "okta", name: "Okta", category: "SSO", note: "OIDC single sign-on for admins." },
   { key: "google-sso", name: "Google Workspace", category: "SSO", note: "Google single sign-on for admins." },

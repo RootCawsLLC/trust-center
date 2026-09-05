@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
-import { nanoid } from "nanoid";
 import { prisma } from "@/lib/prisma";
 import { downloadRequestSchema } from "@/lib/validation";
 import { matchCustomerByDomain, isFreemail } from "@/lib/salesforce";
 import { logAudit, clientIpFromHeaders } from "@/lib/audit";
 import { domainFromEmail } from "@/lib/utils";
-
-import { grantExpiryDate } from "@/lib/settings";
+import { getOrgSettings } from "@/lib/settings";
+import { resolveDownloadAccess } from "@/lib/access";
 
 export async function POST(req: Request) {
   const json = await req.json().catch(() => null);
@@ -33,7 +32,11 @@ export async function POST(req: Request) {
   const domain = domainFromEmail(email);
   const match = await matchCustomerByDomain(domain);
   const classification = match.isCustomer ? "CUSTOMER" : "LEAD";
-  const ndaRequired = doc.visibility === "PRIVATE";
+  // Active customers can be exempted from the click-through NDA (their MSA covers
+  // confidentiality) when the vendor enables it. Leads/unmatched always sign.
+  const { customerNdaBypass } = await getOrgSettings();
+  const ndaBypassed = customerNdaBypass && classification === "CUSTOMER" && doc.visibility === "PRIVATE";
+  const ndaRequired = doc.visibility === "PRIVATE" && !ndaBypassed;
 
   // Immutable capture of the request.
   const request = await prisma.downloadRequest.create({
@@ -87,6 +90,7 @@ export async function POST(req: Request) {
       domain,
       freemail: isFreemail(domain),
       ndaRequired,
+      ndaBypassed,
       matchedCustomer: match.customerName,
     },
   });
@@ -110,18 +114,8 @@ export async function POST(req: Request) {
     });
   }
 
-  // Public document: issue a download grant immediately.
-  const grant = await prisma.downloadGrant.create({
-    data: {
-      token: nanoid(40),
-      downloadRequestId: request.id,
-      expiresAt: await grantExpiryDate(),
-    },
-  });
-
-  return NextResponse.json({
-    status: "ready",
-    token: grant.token,
-    fileName: doc.fileName,
-  });
+  // Public doc, or a private doc whose NDA is bypassed for this customer: resolve
+  // access (issue a grant, or route through the approval gate in manual mode).
+  const result = await resolveDownloadAccess(request, doc);
+  return NextResponse.json(result);
 }
