@@ -52,7 +52,7 @@ export async function POST(req: Request) {
   ]);
 
   const context = [
-    "## Knowledge base",
+    "## FAQ",
     ...articles.map((a) => `- [${a.category}] ${a.title}: ${htmlToText(a.contentHtml ?? "").slice(0, 500) || a.bodyMarkdown.slice(0, 500)}`),
     "## Documents available (each requires a short form; some require an NDA)",
     ...docs.map((d) => `- ${d.title}${d.visibility === "PRIVATE" ? " (NDA required)" : ""}: ${d.description ?? ""} [${d.frameworks.join(", ")}]`),

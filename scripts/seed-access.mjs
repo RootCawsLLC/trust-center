@@ -35,6 +35,9 @@ const integrations = [
   { key: "okta", name: "Okta", category: "SSO", note: "OIDC single sign-on for admins." },
   { key: "google-sso", name: "Google Workspace", category: "SSO", note: "Google single sign-on for admins." },
   { key: "ses", name: "Amazon SES", category: "Email", note: "Deliver welcome & notification emails." },
+  { key: "freshdesk", name: "Freshworks (Freshdesk)", category: "Ticketing", note: "Forward trust-center tickets to Freshdesk. Native ticketing stays the default." },
+  { key: "zendesk", name: "Zendesk", category: "Ticketing", note: "Sync trust-center tickets to Zendesk." },
+  { key: "jira-sm", name: "Jira Service Management", category: "Ticketing", note: "Raise Jira Service Management issues from tickets." },
 ];
 
 for (const g of groups) {

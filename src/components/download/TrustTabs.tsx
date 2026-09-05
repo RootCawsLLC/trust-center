@@ -40,7 +40,7 @@ const TABS = [
   { key: "responsibility", label: "Shared responsibility", icon: SplitSquareHorizontal },
   { key: "calendar", label: "Compliance calendar", icon: CalendarDays },
   { key: "subprocessors", label: "Subprocessors", icon: Network },
-  { key: "knowledge", label: "Knowledge base", icon: BookOpen },
+  { key: "knowledge", label: "FAQ", icon: BookOpen },
   { key: "updates", label: "Updates", icon: Megaphone },
 ] as const;
 
@@ -245,7 +245,7 @@ function Knowledge({ items }: { items: ArticleItem[] }) {
         <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
         <input
           className="input pl-9"
-          placeholder="Search the knowledge base…"
+          placeholder="Search the FAQ…"
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
@@ -334,7 +334,7 @@ function RiskProfile({ items }: { items: RiskItem[] }) {
   return (
     <div className="space-y-6">
       <p className="text-sm text-ink-soft">
-        Common answers to security-review questions. See the knowledge base and
+        Common answers to security-review questions. See the FAQ and
         shared-responsibility matrix for more detail.
       </p>
       {cats.map((cat) => (

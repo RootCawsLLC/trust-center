@@ -26,7 +26,7 @@ export const MODULES: ModuleDef[] = [
   { key: "answers", label: "Answer library" },
   { key: "nda", label: "NDA templates" },
   { key: "subprocessors", label: "Subprocessors" },
-  { key: "knowledge", label: "Knowledge base" },
+  { key: "knowledge", label: "FAQ" },
   { key: "updates", label: "Updates" },
   { key: "attributes", label: "Attribute manager" },
   { key: "integrations", label: "Integrations" },

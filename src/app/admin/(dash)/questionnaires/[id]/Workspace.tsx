@@ -3,10 +3,10 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Check, SkipForward, RefreshCw, Download, Loader2, CircleCheck } from "lucide-react";
+import { ArrowLeft, Check, SkipForward, RefreshCw, Download, Loader2, CircleCheck, Library } from "lucide-react";
 import { Pill } from "@/components/admin/ui";
 import { cn } from "@/lib/utils";
-import { updateItem, redraftItem, setQuestionnaireStatus } from "../actions";
+import { updateItem, redraftItem, setQuestionnaireStatus, saveItemToLibrary } from "../actions";
 
 export type WItem = {
   id: string;
@@ -70,6 +70,16 @@ export function Workspace({ questionnaire, items }: { questionnaire: Questionnai
 function ItemCard({ item, index, busy, onAct }: { item: WItem; index: number; busy: boolean; onAct: (fn: () => Promise<{ ok: boolean }>) => void }) {
   const [answer, setAnswer] = useState(item.finalAnswer);
   const dirty = answer !== item.finalAnswer;
+  const [libMsg, setLibMsg] = useState<string | null>(null);
+  const [libBusy, setLibBusy] = useState(false);
+
+  async function toLibrary() {
+    setLibBusy(true);
+    setLibMsg(null);
+    const res = await saveItemToLibrary(item.id);
+    setLibBusy(false);
+    setLibMsg(res.ok ? "Added to answer library" : res.error);
+  }
 
   return (
     <div className={cn("card p-4", item.status === "approved" && "ring-1 ring-emerald-200", item.status === "skipped" && "opacity-60")}>
@@ -104,6 +114,10 @@ function ItemCard({ item, index, busy, onAct }: { item: WItem; index: number; bu
         <button className="btn-ghost text-sm text-ink-soft" disabled={busy} onClick={() => onAct(() => redraftItem(item.id))} title="Re-draft from the answer library">
           <RefreshCw size={14} /> Re-draft
         </button>
+        <button className="btn-ghost text-sm text-ink-soft" disabled={libBusy || !answer.trim()} onClick={toLibrary} title="Add this answer to the answer library">
+          {libBusy ? <Loader2 className="animate-spin" size={14} /> : <Library size={14} />} Save to library
+        </button>
+        {libMsg && <span className="text-xs text-ink-faint">{libMsg}</span>}
       </div>
     </div>
   );

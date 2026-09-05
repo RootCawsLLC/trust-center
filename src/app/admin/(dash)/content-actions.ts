@@ -363,7 +363,7 @@ export async function deleteEvent(id: string): Promise<ActionResult> {
   return { ok: true };
 }
 
-// ---- Knowledge base ----
+// ---- FAQ ----
 export async function saveArticle(id: string | null, fd: FormData): Promise<ActionResult> {
   const g = await guard("knowledge");
   if (g instanceof Error) return { ok: false, error: g.message };

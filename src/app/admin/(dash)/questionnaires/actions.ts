@@ -128,6 +128,43 @@ export async function setQuestionnaireStatus(id: string, status: string): Promis
   return { ok: true };
 }
 
+// Write an approved questionnaire answer back into the answer library, so the
+// library grows from completed questionnaires (governed: added as medium
+// confidence for review, never silently). Requires answer-library edit rights.
+export async function saveItemToLibrary(id: string): Promise<ActionResult> {
+  let g;
+  try {
+    g = await requireModule("answers", "edit");
+  } catch (e) {
+    return { ok: false, error: e instanceof AuthzError ? e.message : "You need edit access to the answer library." };
+  }
+  const item = await prisma.questionnaireItem.findUnique({ where: { id } });
+  if (!item) return { ok: false, error: "Item not found." };
+  const answer = (item.finalAnswer ?? "").trim();
+  if (!answer) return { ok: false, error: "Add an answer before saving it to the library." };
+  // Skip if this exact question is already in the library.
+  const existing = await prisma.answerLibraryEntry.findFirst({ where: { question: item.question } });
+  if (existing) return { ok: false, error: "A library entry for this question already exists." };
+  const max = await prisma.answerLibraryEntry.aggregate({ _max: { sortOrder: true } });
+  const entry = await prisma.answerLibraryEntry.create({
+    data: {
+      question: item.question.slice(0, 2000),
+      answer: answer.slice(0, 4000),
+      category: "From questionnaires",
+      confidence: "medium",
+      ownerEmail: g.user.email,
+      lastReviewedAt: new Date(),
+      isPublished: true,
+      sortOrder: (max._max.sortOrder ?? 0) + 1,
+    },
+  });
+  await prisma.questionnaireItem.update({ where: { id }, data: { matchedEntryId: entry.id, confidence: "high" } });
+  await logAudit({ action: "ANSWER_CREATE", actorUserId: g.user.id, actorEmail: g.user.email, targetType: "AnswerLibraryEntry", targetId: entry.id, metadata: { from: "questionnaire" } });
+  revalidatePath(`/admin/questionnaires/${item.questionnaireId}`);
+  revalidatePath("/admin/answers");
+  return { ok: true };
+}
+
 export async function deleteQuestionnaire(id: string): Promise<ActionResult> {
   const g = await guard();
   if (g instanceof Error) return { ok: false, error: g.message };

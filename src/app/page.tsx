@@ -137,7 +137,7 @@ export default async function HomePage() {
         <div className="mb-4">
           <h2 className="text-xl font-bold tracking-tight text-ink">Resources</h2>
           <p className="text-sm text-ink-soft">
-            Documents, subprocessors, knowledge base, and product updates. All
+            Documents, subprocessors, FAQ, and product updates. All
             downloads require a few details; confidential documents also require an
             NDA.
           </p>

@@ -72,7 +72,7 @@ export function SettingsForm({ settings }: { settings: ResolvedSettings }) {
         <p className="mt-1 text-sm text-ink-soft">Choose which tabs appear on the public trust center.</p>
         <div className="mt-4 space-y-2">
           <Toggle name="showSubprocessors" label="Subprocessors" defaultChecked={settings.showSubprocessors} />
-          <Toggle name="showKnowledge" label="Knowledge base" defaultChecked={settings.showKnowledge} />
+          <Toggle name="showKnowledge" label="FAQ" defaultChecked={settings.showKnowledge} />
           <Toggle name="showUpdates" label="Updates" defaultChecked={settings.showUpdates} />
         </div>
       </section>

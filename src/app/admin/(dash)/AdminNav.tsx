@@ -52,7 +52,7 @@ const NAV = [
   { href: "/admin/answers", label: "Answer library", icon: Library },
   { href: "/admin/nda", label: "NDA templates", icon: FileSignature },
   { href: "/admin/subprocessors", label: "Subprocessors", icon: Network },
-  { href: "/admin/knowledge", label: "Knowledge base", icon: BookOpen },
+  { href: "/admin/knowledge", label: "FAQ", icon: BookOpen },
   { href: "/admin/updates", label: "Updates", icon: Megaphone },
   { href: "/admin/users", label: "Users", icon: Users, ownerOnly: true },
   { href: "/admin/groups", label: "Groups", icon: UsersRound, ownerOnly: true },

@@ -17,7 +17,7 @@ export default async function KnowledgePage() {
   return (
     <div>
       <PageHeader
-        title="Knowledge base"
+        title="FAQ"
         description="FAQ-style articles shown on the public trust center. Each entry can be rich text, a link, or an attached document."
       />
       <ContentManager

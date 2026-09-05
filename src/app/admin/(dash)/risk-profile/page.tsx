@@ -18,7 +18,7 @@ export default async function RiskProfilePage() {
     <div>
       <PageHeader
         title="Risk profile"
-        description="Key security facts (RTO, RPO, encryption…) shown on the public trust center. Only add what isn't already obvious in the knowledge base or RACI."
+        description="Key security facts (RTO, RPO, encryption…) shown on the public trust center. Only add what isn't already obvious in the FAQ or RACI."
       />
       <ContentManager
         newLabel="New fact"
