@@ -365,6 +365,7 @@ model OrgSettings {
   showUpdates       Boolean  @default(true)
   grantTtlMinutes   Int      @default(15)
   approvalMode      String   @default("auto") // auto = instant grant; manual = require admin approval for private docs
+  watermarkEnabled  Boolean  @default(true) // stamp a per-viewer watermark on downloaded PDFs
   retentionNote     String?  @db.Text
   updatedAt         DateTime @updatedAt
 }
@@ -482,6 +483,25 @@ model Integration {
   status    String   @default("disconnected") // connected | disconnected
   note      String?
   updatedAt DateTime @updatedAt
+}
+
+// Per-viewer download event — an auditor-ready "who accessed what, when, from
+// where" trail, one row per file fetch (separate from the request ledger).
+model DownloadEvent {
+  id                String   @id @default(cuid())
+  downloadRequestId String?
+  documentId        String
+  documentTitle     String
+  requesterEmail    String
+  emailDomain       String?
+  kind              String   @default("single") // single | bulk
+  watermarked       Boolean  @default(false)
+  ipAddress         String?
+  userAgent         String?
+  createdAt         DateTime @default(now())
+
+  @@index([documentId])
+  @@index([createdAt])
 }
 
 // Curated Q&A the vendor maintains — the grounding for questionnaire answers

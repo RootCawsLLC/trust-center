@@ -89,6 +89,10 @@ export function SettingsForm({ settings }: { settings: ResolvedSettings }) {
               <option value="manual">Manual — require admin approval</option>
             </select>
           </Field>
+          <label className="flex items-center gap-2 text-sm text-ink-soft sm:col-span-2">
+            <input type="checkbox" name="watermarkEnabled" defaultChecked={settings.watermarkEnabled} className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-400" />
+            Watermark confidential PDF downloads with the viewer&rsquo;s email and timestamp
+          </label>
           <div className="sm:col-span-2">
             <Field label="Data-handling note (shown to requesters)">
               <textarea name="retentionNote" className="input min-h-20" defaultValue={settings.retentionNote ?? ""} placeholder="e.g. We retain request records to manage access to our documentation." />
