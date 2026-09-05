@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>trust-center — a vendor trust center where every download is earned</title>
+<meta name="description" content="A vendor trust center: a public document library where every download is gated by a form, private files require a click-through NDA, and every request lands in an append-only ledger with Salesforce-based customer/lead classification. Next.js + Postgres on AWS App Runner + RDS.">
+<style>
+:root{
+  --bg:#FAFAF8;--panel:#FFFFFF;--panel-2:#F5F1E8;--border:#e0e0e0;
+  --ink:#1a1a1a;--ink-2:#444444;--ink-3:#666666;--accent:#6B63B5;--accent-soft:#efedf9;
+  --breach:#B4413F;--held:#2F7D53;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#1a1a1a;--panel:#242424;--panel-2:#2d2d2d;--border:#333333;
+    --ink:#f0f0f0;--ink-2:#c0c0c0;--ink-3:#999999;--accent:#8B7FD6;--accent-soft:#2b2740;
+    --breach:#E58A88;--held:#7FC79B;
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;padding:2.5rem 1.25rem 4rem;background:var(--bg);color:var(--ink);
+  font:15px/1.65 ui-sans-serif,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.wrap{max-width:46rem;margin:0 auto}
+h1{font-size:1.7rem;margin:0 0 .35rem;letter-spacing:-.01em}
+.thesis{color:var(--ink-2);margin:0 0 1.25rem;font-size:1.02rem}
+.thesis b{color:var(--ink)}
+nav.toc{display:flex;flex-wrap:wrap;gap:.4rem .75rem;margin:0 0 2rem;font-size:.82rem}
+nav.toc a{color:var(--accent);text-decoration:none}
+nav.toc a:hover{text-decoration:underline}
+h2{font-size:.78rem;text-transform:uppercase;letter-spacing:.09em;color:var(--ink-3);
+  margin:2.25rem 0 .75rem;font-weight:600}
+h3{font-size:1rem;margin:1.35rem 0 .4rem}
+p,li{color:var(--ink-2)}
+p{margin:0 0 .85rem}
+ul,ol{margin:.2rem 0 1rem;padding-left:1.2rem}
+li{margin:.25rem 0}
+b{color:var(--ink)}
+.note{background:var(--panel-2);border-radius:8px;padding:.85rem 1.05rem;font-size:.89rem;
+  color:var(--ink-2);margin:1.25rem 0}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin:0 0 1rem}
+@media (max-width:640px){.pair{grid-template-columns:1fr}}
+.box{background:var(--panel);border:1px solid var(--border);border-radius:9px;padding:.85rem 1rem}
+.box h3{margin:.1rem 0 .4rem}
+.box.use{border-left:4px solid var(--held)}
+.box.dont{border-left:4px solid var(--breach)}
+code{font:13px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+table{width:100%;border-collapse:collapse;font-size:.9rem;margin:0 0 1rem}
+th,td{text-align:left;vertical-align:top;padding:.45rem .5rem .45rem 0;border-bottom:1px solid var(--border)}
+th{color:var(--ink-3);font-weight:600;font-size:.78rem;text-transform:uppercase;letter-spacing:.06em}
+footer{margin-top:2.5rem;padding-top:1rem;border-top:1px solid var(--border);
+  color:var(--ink-3);font-size:.84rem}
+footer a{color:var(--accent)}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>trust-center</h1>
+<p class="thesis">A vendor <b>trust center</b>: prospects and customers browse your security and
+compliance documentation, but <b>nothing is downloadable anonymously</b> — every file is gated by a
+form, private files require a click-through NDA, and every request lands in an append-only ledger
+that already knows whether the requester is a customer or a new sales lead.</p>
+
+<a href="https://695bgvfmww.us-east-1.awsapprunner.com/" style="display:flex;align-items:center;gap:.85rem;margin:0 0 1.75rem;padding:.85rem 1.05rem;background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:10px;text-decoration:none">
+  <span aria-hidden="true" style="font-size:1.3rem;line-height:1;color:var(--accent)">&#9654;</span>
+  <span>
+    <span style="display:block;font-weight:700;color:var(--ink)">Open the live trust center &mdash; hosted &rarr;</span>
+    <span style="display:block;font-size:.86rem;color:var(--ink-2);margin-top:.15rem">Browse the public library, request a download, accept an NDA on a private file &mdash; then sign in to the <a href="https://695bgvfmww.us-east-1.awsapprunner.com/admin" style="color:var(--accent)">vendor admin console</a> to see every request scored as a customer or a lead.</span>
+  </span>
+</a>
+
+<nav class="toc" aria-label="On this page">
+  <a href="#what">What it does</a>
+  <a href="#when">When to use it</a>
+  <a href="#controls">The controls that make it trustworthy</a>
+  <a href="#intel">Customer vs. lead</a>
+  <a href="#built">How it's built</a>
+  <a href="#limits">Honest limits</a>
+</nav>
+
+<h2 id="what">What it does</h2>
+<p>Two surfaces on one Next.js app, sharing one database.</p>
+<h3>The public trust center</h3>
+<ul>
+  <li>A document library grouped by type &mdash; Policies, Procedures, Audits, Certifications,
+    Reports, Whitepapers &mdash; each marked <b>Public</b> or <b>Private</b> by the vendor.</li>
+  <li><b>Every download is gated</b> by a short form (name, work email, organization, country). The
+    "whitepaper gate" pattern: nothing leaves anonymously.</li>
+  <li><b>Private</b> files additionally require a <b>click-through NDA</b> &mdash; the vendor's own
+    text or a built-in template &mdash; before the file is released. Acceptance is recorded with the
+    signer's name, email, a SHA-256 hash of the exact NDA text, a timestamp, and the IP.</li>
+</ul>
+<h3>The vendor admin console</h3>
+<ul>
+  <li>Document CRUD and upload; per-document public/private and NDA assignment.</li>
+  <li><b>Requests</b> &mdash; every capture, in an append-only ledger, filterable by customer or
+    lead, showing the matched Salesforce account or lead domain.</li>
+  <li><b>Sales leads</b> &mdash; non-customer domains, aggregated with request counts.</li>
+  <li>NDA templates, users with role-based access, an audit log, and settings (SSO and security
+    posture). Okta and Google SSO are scaffolded and auto-enable when their env vars are set.</li>
+</ul>
+
+<h2 id="when">When and where to use it</h2>
+<div class="pair">
+  <div class="box use">
+    <h3>Use it when</h3>
+    <ul>
+      <li>Your security documentation is what prospects ask for during a deal, and you want the
+        interest captured rather than handed out anonymously.</li>
+      <li>You need a defensible record of who accepted which NDA, over exactly which text, and when.</li>
+      <li>You want download interest to land in front of the sales team already classified as an
+        existing customer or a fresh lead.</li>
+    </ul>
+  </div>
+  <div class="box dont">
+    <h3>Do not expect</h3>
+    <ul>
+      <li>A CRM. It classifies a requester against a customer directory; it does not replace
+        Salesforce &mdash; it points back at it.</li>
+      <li>A signed-contract workflow. The NDA is a click-through gate on a download, recorded for
+        evidence, not a negotiated agreement.</li>
+      <li>Real customer data in this demo &mdash; the Salesforce directory is a seeded mock (below).</li>
+    </ul>
+  </div>
+</div>
+
+<h2 id="controls">The controls that make it trustworthy</h2>
+<p>A trust center that cannot prove its own record is just a download page. The point of this one is
+that the evidence is enforced, not asserted.</p>
+<ul>
+  <li><b>Immutable ledger.</b> <code>DownloadRequest</code>, <code>NdaAcceptance</code> and
+    <code>AuditLog</code> are append-only. Postgres <code>BEFORE UPDATE/DELETE</code> triggers reject
+    any mutation (error <code>23001</code>), and the app connects with a least-privilege role
+    (<code>trust_app</code>) that holds only <code>INSERT</code>/<code>SELECT</code> on those tables.
+    Enforced by the database, verified by the test suite.</li>
+  <li><b>Role-based access</b> (Owner / Admin / Viewer) enforced server-side in the admin layout and
+    in every server action &mdash; not just hidden in the UI.</li>
+  <li><b>Gated storage.</b> Private files live in S3 (server-side encrypted in production) and are
+    served only through a gated, time-boxed download token &mdash; never a public object URL.</li>
+  <li><b>Audit logging</b> of downloads, NDA acceptances, and admin changes; input validation
+    everywhere; session hardening and security-conscious defaults.</li>
+</ul>
+
+<h2 id="intel">Customer vs. lead, at the moment of interest</h2>
+<p>Each requester's email domain is matched against a Salesforce customer directory. A match
+classifies the request as a <b>Customer</b>, with the account name; no match records it as a
+<b>Sales lead</b> by domain. Both are visible to the vendor team the moment the download happens, so
+document interest is a signal, not an afterthought.</p>
+<div class="note">In this build the Salesforce directory is a seeded <b>mock</b> table. Going live is
+a matter of swapping that lookup for a real SOQL query &mdash; the classification, ledger, and admin
+surfaces stay the same.</div>
+
+<h2 id="built">How it's built</h2>
+<table>
+  <thead><tr><th>Layer</th><th>Choice</th></tr></thead>
+  <tbody>
+    <tr><td>App</td><td>A single Next.js app serving both the public site and the <code>/admin</code> console.</td></tr>
+    <tr><td>Data</td><td>Postgres via Prisma, with the append-only triggers and least-privilege role above.</td></tr>
+    <tr><td>Files</td><td>S3 for document blobs in production (local disk in development), token-gated.</td></tr>
+    <tr><td>Auth</td><td>Auth.js for admin sign-in; Okta and Google SSO scaffolded.</td></tr>
+    <tr><td>Hosting</td><td>AWS <b>App Runner + RDS</b>, built and shipped from a Dockerfile via CodeBuild and Terraform.</td></tr>
+  </tbody>
+</table>
+
+<h2 id="limits">Honest limits</h2>
+<ul>
+  <li>The Salesforce match is a mock directory in this demo, as noted &mdash; the one lookup you wire
+    to go live.</li>
+  <li>The demo is a working trust center with seeded content; treat every document and requester in
+    it as illustrative, not real.</li>
+  <li>SSO is scaffolded and off until its environment variables are supplied.</li>
+</ul>
+
+<footer>
+Source: <a href="https://github.com/RootCawsLLC/trust-center">github.com/RootCawsLLC/trust-center</a>
+&nbsp;&middot;&nbsp; Live: <a href="https://695bgvfmww.us-east-1.awsapprunner.com/">the hosted trust center</a>
+</footer>
+
+</div></body>
+</html>
