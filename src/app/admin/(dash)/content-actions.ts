@@ -6,8 +6,9 @@ import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
 import { AuthzError } from "@/lib/rbac";
 import { requireModule } from "@/lib/permissions";
-import { sanitizeRichText } from "@/lib/sanitize";
+import { sanitizeRichText, htmlToText } from "@/lib/sanitize";
 import { putObject } from "@/lib/storage";
+import { enqueueNotification } from "@/lib/notifications";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 
@@ -426,8 +427,15 @@ export async function saveUpdate(id: string | null, fd: FormData): Promise<Actio
     isPublished: fd.has("isPublished") ? bool(fd, "isPublished") : true,
     ...(dateStr ? { publishedAt: new Date(dateStr) } : {}),
   };
-  if (id) await prisma.trustUpdate.update({ where: { id }, data });
-  else await prisma.trustUpdate.create({ data });
+  if (id) {
+    await prisma.trustUpdate.update({ where: { id }, data });
+  } else {
+    await prisma.trustUpdate.create({ data });
+    // Fan a notification out to subscribers when a brand-new update is published.
+    if (data.isPublished) {
+      await enqueueNotification({ event: "update", subject: `New update: ${title}`, body: htmlToText(contentHtml).slice(0, 500), createdById: g.user.id });
+    }
+  }
   await logAudit({ action: id ? "UPDATE_UPDATE" : "UPDATE_CREATE", actorUserId: g.user.id, actorEmail: g.user.email, targetType: "TrustUpdate", targetId: id ?? undefined, metadata: { title } });
   revalidatePath("/admin/updates");
   revalidatePath("/");

@@ -18,6 +18,7 @@ export const MODULES: ModuleDef[] = [
   { key: "compliance-calendar", label: "Compliance calendar" },
   { key: "requests", label: "Requests" },
   { key: "leads", label: "Sales leads" },
+  { key: "subscribers", label: "Subscribers" },
   { key: "tickets", label: "Tickets" },
   { key: "nda", label: "NDA templates" },
   { key: "subprocessors", label: "Subprocessors" },

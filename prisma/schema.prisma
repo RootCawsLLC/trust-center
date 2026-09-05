@@ -482,6 +482,40 @@ model Integration {
   updatedAt DateTime @updatedAt
 }
 
+// A visitor who subscribed to trust-center change notifications. Domain is
+// matched to the mock Salesforce like download requests, so admins see which
+// subscribers are customers vs. leads.
+model Subscriber {
+  id                  String    @id @default(cuid())
+  email               String    @unique
+  emailDomain         String
+  isCustomer          Boolean   @default(false)
+  matchedCustomerName String?
+  token               String    @unique // unsubscribe token
+  topics              String[]  @default([]) // empty = all
+  confirmedAt         DateTime?
+  unsubscribedAt      DateTime?
+  createdAt           DateTime  @default(now())
+
+  @@index([emailDomain])
+}
+
+// A change notification fanned out to subscribers. In this build sending is
+// scaffolded (recorded here, previewed, not actually delivered) unless SES is
+// wired — mirrors the welcome-email scaffold.
+model NotificationLog {
+  id             String   @id @default(cuid())
+  event          String // update | subprocessor | certification | incident | manual
+  subject        String
+  body           String   @db.Text
+  recipientCount Int      @default(0)
+  status         String   @default("queued") // queued | sent
+  createdById    String?
+  createdAt      DateTime @default(now())
+
+  @@index([createdAt])
+}
+
 // A saved chart on the Metrics page: a query-builder definition (dataset +
 // dimension + chart type + filters) shared across the admin team. Rendered by
 // computing it live against the current data.

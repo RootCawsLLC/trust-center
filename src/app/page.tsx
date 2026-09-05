@@ -5,6 +5,7 @@ import { CertBadge } from "@/components/marketing/CertBadge";
 import { type LibraryDoc } from "@/components/download/DocumentLibrary";
 import { TrustTabs } from "@/components/download/TrustTabs";
 import { AskWidget } from "@/components/marketing/AskWidget";
+import { SubscribeForm } from "@/components/marketing/SubscribeForm";
 import { getOrgSettings } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
@@ -175,6 +176,26 @@ export default async function HomePage() {
           events={events.map((e) => ({ id: e.id, title: e.title, detail: e.detail, framework: e.framework, product: e.product, window: e.window, status: e.status }))}
         />
       </main>
+
+      {/* Subscribe to change notifications */}
+      <section className="border-t border-slate-200 bg-white">
+        <div className="mx-auto max-w-6xl px-6 py-10">
+          <div className="rounded-2xl bg-brand-50 p-6 ring-1 ring-inset ring-brand-200 sm:p-8">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="max-w-lg">
+                <h2 className="text-lg font-bold tracking-tight text-ink">Stay up to date</h2>
+                <p className="mt-1 text-sm text-ink-soft">
+                  Get notified when we publish a new report, add a subprocessor, update a
+                  certification, or post a security update. Unsubscribe anytime.
+                </p>
+              </div>
+              <div className="w-full sm:max-w-md">
+                <SubscribeForm />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <footer className="border-t border-slate-200 bg-white">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-6 py-8 text-sm text-ink-faint sm:flex-row">

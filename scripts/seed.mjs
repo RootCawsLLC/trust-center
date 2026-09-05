@@ -261,6 +261,18 @@ language in the admin console before UAT.`;
     });
   }
 
+  if ((await prisma.subscriber.count()) === 0) {
+    const { randomUUID } = await import("node:crypto");
+    const subs = [
+      { email: "security@northwind.com", emailDomain: "northwind.com", isCustomer: true, matchedCustomerName: "Northwind Traders" },
+      { email: "grc@globex.com", emailDomain: "globex.com", isCustomer: true, matchedCustomerName: "Globex Corporation" },
+      { email: "reviewer@prospect.io", emailDomain: "prospect.io", isCustomer: false, matchedCustomerName: null },
+    ];
+    for (const s of subs) {
+      await prisma.subscriber.create({ data: { ...s, token: randomUUID(), confirmedAt: new Date() } });
+    }
+  }
+
   console.log(
     `[seed] users, NDA template, ${customers.length} SF customers, documents: ${created} created / ${updated} updated. Admin: ${adminEmail}`,
   );
