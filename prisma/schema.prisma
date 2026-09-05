@@ -616,21 +616,41 @@ model NotificationLog {
   @@index([createdAt])
 }
 
+// A named dashboard "view" on the Metrics page — a tab holding an ordered set
+// of charts (e.g. "Q1 2026", "Year over year") so leaders can flip between
+// curated views. Shared with the team.
+model Dashboard {
+  id          String   @id @default(cuid())
+  name        String
+  sortOrder   Int      @default(0)
+  isDefault   Boolean  @default(false)
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  charts SavedChart[]
+
+  @@index([sortOrder])
+}
+
 // A saved chart on the Metrics page: a query-builder definition (dataset +
 // dimension + chart type + filters) shared across the admin team. Rendered by
-// computing it live against the current data.
+// computing it live against the current data. Belongs to a Dashboard view.
 model SavedChart {
-  id          String   @id @default(cuid())
+  id          String     @id @default(cuid())
   name        String
   dataset     String // "requests" | "tickets"
   dimension   String // e.g. "classification", "documentTitle", "month"
-  chartType   String   @default("bar") // bar | pie | table
+  chartType   String     @default("bar") // bar | pie | table
   filters     Json? // { from, to, ... }
-  sortOrder   Int      @default(0)
+  sortOrder   Int        @default(0)
+  dashboardId String?
+  dashboard   Dashboard? @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
   createdById String?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime   @default(now())
 
   @@index([sortOrder])
+  @@index([dashboardId])
 }
 
 // Admin-managed controlled vocabularies (the "Attribute Manager"). Each row is

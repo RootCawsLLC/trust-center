@@ -1,25 +1,17 @@
-import Link from "next/link";
 import { requireModuleView } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { PageHeader, StatCard } from "@/components/admin/ui";
 import { FilterBar } from "@/components/admin/FilterBar";
 import { dateRangeWhere, firstStr } from "@/lib/filters";
-import { cn } from "@/lib/utils";
 import { DATASETS, CHART_TYPES, datasetDef, runChart } from "@/lib/metrics";
 import { QueryBuilder } from "./QueryBuilder";
 import { SavedChartCard } from "./SavedChartCard";
+import { DashboardBar, type DashTab } from "./DashboardBar";
 import type { Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
-type Row = { label: string; n: number };
 type SP = Promise<Record<string, string | string[] | undefined>>;
-
-function tally(pairs: string[]): Row[] {
-  const m = new Map<string, number>();
-  for (const p of pairs) m.set(p, (m.get(p) ?? 0) + 1);
-  return [...m.entries()].map(([label, n]) => ({ label, n })).sort((a, b) => b.n - a.n);
-}
 
 function qs(base: Record<string, string>, from?: string, to?: string) {
   const p = new URLSearchParams(base);
@@ -37,38 +29,24 @@ export default async function MetricsPage({ searchParams }: { searchParams: SP }
   const reqWhere: Prisma.DownloadRequestWhereInput = createdAt ? { createdAt } : {};
   const dateWhere = createdAt ? { createdAt } : {};
 
-  const [customers, leads, ndas, zips, requests] = await Promise.all([
+  const [customers, leads, ndas, zips, total, dashboards] = await Promise.all([
     prisma.downloadRequest.count({ where: { ...reqWhere, classification: "CUSTOMER" } }),
     prisma.downloadRequest.count({ where: { ...reqWhere, classification: "LEAD" } }),
     prisma.ndaAcceptance.count({ where: dateWhere }),
     prisma.bulkDownload.count({ where: createdAt ? { createdAt } : {} }),
-    prisma.downloadRequest.findMany({
-      where: reqWhere,
-      select: { documentId: true, documentTitle: true, documentVisibility: true, emailDomain: true, createdAt: true },
-    }),
+    prisma.downloadRequest.count({ where: reqWhere }),
+    prisma.dashboard.findMany({ orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] }),
   ]);
-  const total = requests.length;
 
-  const docIds = [...new Set(requests.map((r) => r.documentId))];
-  const docs = await prisma.document.findMany({
-    where: { id: { in: docIds } },
-    select: { id: true, frameworks: true, industries: true },
-  });
-  const docMap = new Map(docs.map((d) => [d.id, d]));
+  const tabs: DashTab[] = dashboards.map((d) => ({ id: d.id, name: d.name }));
+  const requested = firstStr(sp.dash);
+  const selected = dashboards.find((d) => d.id === requested) ?? dashboards.find((d) => d.isDefault) ?? dashboards[0] ?? null;
 
-  const months = tally(
-    requests.map((r) => r.createdAt.toLocaleString("en-US", { month: "short", year: "numeric" })),
-  ).reverse();
-  const byDoc = tally(requests.map((r) => r.documentTitle)).slice(0, 8);
-  const byDomain = tally(requests.map((r) => r.emailDomain)).slice(0, 8);
-  const byFramework = tally(requests.flatMap((r) => docMap.get(r.documentId)?.frameworks ?? [])).slice(0, 8);
-  const byIndustry = tally(requests.flatMap((r) => docMap.get(r.documentId)?.industries ?? [])).slice(0, 8);
-  const publicN = requests.filter((r) => r.documentVisibility === "PUBLIC").length;
-
-  // Custom saved charts (query-builder output), computed live against the data.
-  const savedCharts = await prisma.savedChart.findMany({ orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] });
+  const charts = selected
+    ? await prisma.savedChart.findMany({ where: { dashboardId: selected.id }, orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] })
+    : [];
   const chartData = await Promise.all(
-    savedCharts.map(async (c) => {
+    charts.map(async (c) => {
       const f = (c.filters as { from?: string | null; to?: string | null } | null) ?? {};
       const rows = await runChart(c.dataset, c.dimension, { from: f.from ?? undefined, to: f.to ?? undefined });
       const ds = datasetDef(c.dataset);
@@ -81,7 +59,7 @@ export default async function MetricsPage({ searchParams }: { searchParams: SP }
     <div>
       <PageHeader
         title="Metrics"
-        description="Requests, demand by document and framework, and customer-vs-lead mix. Filter by date; click any bar to drill into the underlying requests."
+        description="Request and demand analytics. Build your own charts and organize them into dashboard views to share with leadership."
       />
 
       <FilterBar searchPlaceholder="" showDateRange />
@@ -94,17 +72,28 @@ export default async function MetricsPage({ searchParams }: { searchParams: SP }
         <StatCard label="Bulk ZIPs" value={zips} />
       </div>
 
-      {/* Custom charts — build your own with the query builder, saved for the team. */}
-      <section className="mt-8">
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-base font-bold tracking-tight text-ink">Custom charts</h2>
-            <p className="text-sm text-ink-faint">Build your own view of the data — pick a dataset, group-by and chart type. Saved charts are shared with the team.</p>
+      {/* Dashboard views */}
+      <div className="mt-8">
+        <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <DashboardBar dashboards={tabs} selectedId={selected?.id ?? ""} />
           </div>
-          <QueryBuilder datasets={DATASETS as unknown as { key: string; label: string; dimensions: { key: string; label: string }[] }[]} chartTypes={CHART_TYPES as unknown as { key: string; label: string }[]} />
+          {selected && (
+            <QueryBuilder
+              datasets={DATASETS as unknown as { key: string; label: string; dimensions: { key: string; label: string }[] }[]}
+              chartTypes={CHART_TYPES as unknown as { key: string; label: string }[]}
+              dashboardId={selected.id}
+              dashboardName={selected.name}
+            />
+          )}
         </div>
-        {chartData.length === 0 ? (
-          <div className="card p-8 text-center text-sm text-ink-faint">No custom charts yet. Click “New chart” to build one.</div>
+
+        {!selected ? (
+          <div className="card p-8 text-center text-sm text-ink-faint">Create your first dashboard view to start building charts.</div>
+        ) : chartData.length === 0 ? (
+          <div className="card p-8 text-center text-sm text-ink-faint">
+            No charts in the “{selected.name}” view yet. Click <span className="font-medium text-ink">New chart</span> to add one.
+          </div>
         ) : (
           <div className="grid gap-6 lg:grid-cols-2">
             {chartData.map((c) => (
@@ -112,80 +101,7 @@ export default async function MetricsPage({ searchParams }: { searchParams: SP }
             ))}
           </div>
         )}
-      </section>
-
-      <h2 className="mt-8 text-base font-bold tracking-tight text-ink">Standard reports</h2>
-      <div className="mt-4 grid gap-6 lg:grid-cols-2">
-        <Panel title="Requests over time">
-          <Bars rows={months} accent="brand" />
-        </Panel>
-        <Panel title="Customer vs lead">
-          <Bars
-            rows={[{ label: "Customers", n: customers }, { label: "Leads", n: leads }]}
-            accent="split"
-            hrefFor={(l) => `/admin/requests?${qs({ type: l === "Customers" ? "CUSTOMER" : "LEAD" }, from, to)}`}
-          />
-          <div className="mt-3 text-xs text-ink-faint">
-            Public downloads: {publicN} · Under NDA: {total - publicN}
-          </div>
-        </Panel>
-        <Panel title="Most requested documents">
-          <Bars rows={byDoc} accent="brand" hrefFor={(l) => `/admin/requests?${qs({ q: l }, from, to)}`} />
-        </Panel>
-        <Panel title="Demand by framework">
-          <Bars rows={byFramework} accent="emerald" />
-        </Panel>
-        <Panel title="Demand by industry">
-          <Bars rows={byIndustry} accent="amber" />
-        </Panel>
-        <Panel title="Top requesting domains">
-          <Bars rows={byDomain} accent="brand" hrefFor={(l) => `/admin/requests?${qs({ q: l }, from, to)}`} />
-        </Panel>
       </div>
-    </div>
-  );
-}
-
-function Panel({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="card p-5">
-      <h2 className="mb-4 text-sm font-semibold text-ink">{title}</h2>
-      {children}
-    </div>
-  );
-}
-
-const ACCENT: Record<string, string> = {
-  brand: "bg-brand-500",
-  emerald: "bg-emerald-500",
-  amber: "bg-amber-500",
-};
-
-function Bars({ rows, accent = "brand", hrefFor }: { rows: Row[]; accent?: string; hrefFor?: (label: string) => string }) {
-  if (rows.length === 0) return <p className="text-sm text-ink-faint">No data in this period.</p>;
-  const max = Math.max(...rows.map((r) => r.n), 1);
-  return (
-    <div className="space-y-3">
-      {rows.map((r, i) => (
-        <div key={r.label}>
-          <div className="flex items-baseline justify-between gap-3 text-sm">
-            {hrefFor ? (
-              <Link href={hrefFor(r.label)} className="truncate font-medium text-brand-700 hover:underline" title={r.label}>
-                {r.label}
-              </Link>
-            ) : (
-              <span className="truncate text-ink-soft" title={r.label}>{r.label}</span>
-            )}
-            <span className="shrink-0 font-semibold text-ink">{r.n}</span>
-          </div>
-          <div className="mt-1 h-2.5 overflow-hidden rounded-full bg-slate-100">
-            <div
-              className={cn("h-full rounded-full", accent === "split" ? (i === 0 ? "bg-emerald-500" : "bg-blue-500") : ACCENT[accent])}
-              style={{ width: `${Math.max((r.n / max) * 100, 3)}%` }}
-            />
-          </div>
-        </div>
-      ))}
     </div>
   );
 }

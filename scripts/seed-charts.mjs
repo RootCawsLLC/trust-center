@@ -1,5 +1,6 @@
-// Seed a few default saved charts for the Metrics query builder, so the
-// "Custom charts" section ships populated. Idempotent: only when empty.
+// Seed dashboard views + default saved charts for the Metrics query builder.
+// Idempotent: creates an "Overview" default view (+ a "Q1 2026" example), seeds
+// starter charts into Overview when empty, and adopts any orphaned charts.
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
@@ -14,15 +15,30 @@ const defaults = [
 ];
 
 async function main() {
-  const count = await prisma.savedChart.count();
-  if (count > 0) {
-    console.log(`[seed-charts] ${count} charts already present — skipping.`);
-    return;
+  // Ensure a default "Overview" dashboard.
+  let overview = await prisma.dashboard.findFirst({ where: { name: "Overview" } });
+  if (!overview) {
+    overview = await prisma.dashboard.create({ data: { name: "Overview", sortOrder: 1, isDefault: true } });
   }
-  for (const d of defaults) {
-    await prisma.savedChart.create({ data: { ...d, filters: { from: null, to: null } } });
+  // A second example view so the tabs are obviously multi-view.
+  const q1 = await prisma.dashboard.findFirst({ where: { name: "Q1 2026" } });
+  if (!q1) {
+    await prisma.dashboard.create({ data: { name: "Q1 2026", sortOrder: 2 } });
   }
-  console.log(`[seed-charts] created ${defaults.length} default charts.`);
+
+  // Adopt any charts that predate dashboards.
+  await prisma.savedChart.updateMany({ where: { dashboardId: null }, data: { dashboardId: overview.id } });
+
+  // Seed starter charts into Overview when it's empty.
+  const count = await prisma.savedChart.count({ where: { dashboardId: overview.id } });
+  if (count === 0) {
+    for (const d of defaults) {
+      await prisma.savedChart.create({ data: { ...d, filters: { from: null, to: null }, dashboardId: overview.id } });
+    }
+    console.log(`[seed-charts] created ${defaults.length} charts in Overview.`);
+  } else {
+    console.log(`[seed-charts] Overview already has ${count} charts — skipped starters.`);
+  }
 }
 
 main()
