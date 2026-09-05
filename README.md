@@ -157,6 +157,18 @@ tests/             immutability + Salesforce matching tests
 infra/             Terraform (AWS)
 ```
 
+## Privacy
+
+Requesting a document collects identifying details (name, work email, org
+country), the requester's email domain, and request metadata (IP, user agent),
+and records click-through NDA acceptance in an append-only consent ledger. Email
+domains are matched against a customer directory for lead classification — there
+is no third-party data brokering, and no analytics/telemetry SDKs are used. The
+reference deployment stores data in AWS **us-east-1**.
+
+See [PRIVACY.md](PRIVACY.md) for the full breakdown of what is collected, why,
+retention and deletion, and subprocessors.
+
 ## License
 
 Apache License 2.0 — see [LICENSE](LICENSE) and [NOTICE](NOTICE).
