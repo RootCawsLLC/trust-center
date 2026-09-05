@@ -174,6 +174,39 @@ try {
   } catch { check("11. npm audit", "WARN", [], "Could not run npm audit here — run it in CI."); }
 }
 
+// 11b. Stale declared floors: a package.json range whose floor is a materially
+// older (and often vulnerable) version than what's actually locked. OSV-based
+// scanners read the DECLARED floor, not the lockfile — so `^15.1.4` reads as
+// 15.1.4 even when 15.5.25 is installed. Only sensitive packages, to avoid noise.
+{
+  const SENSITIVE = /^(next|next-auth|@auth\/|react|react-dom|nanoid|@prisma\/client|prisma|bcryptjs?|jsonwebtoken|jose|sanitize-html|cookie|undici|axios|ws)$/;
+  const floor = (range) => {
+    const m = String(range).match(/(\d+)\.(\d+)\.(\d+)/);
+    return m ? [+m[1], +m[2], +m[3]] : null;
+  };
+  const majorBehind = []; // FAIL: genuinely stale, likely vulnerable floor
+  const minorBehind = []; // WARN: floor-reading scanners (OSV) may flag; hygiene
+  try {
+    const pkg = JSON.parse(read(ALL.find((f) => /(^|\/)package\.json$/.test(rel(f)))));
+    const lockFile = ALL.find((f) => /(^|\/)package-lock\.json$/.test(rel(f)));
+    const lock = lockFile ? JSON.parse(read(lockFile)) : { packages: {} };
+    const deps = { ...(pkg.dependencies || {}), ...(pkg.devDependencies || {}) };
+    for (const [name, range] of Object.entries(deps)) {
+      if (!SENSITIVE.test(name)) continue;
+      const declared = floor(range);
+      const installed = floor(lock.packages?.[`node_modules/${name}`]?.version || "");
+      if (!declared || !installed) continue;
+      const msg = { file: "package.json", line: 0, text: `${name}: declared floor ${range} but ${installed.join(".")} installed — floor-reading scanners (OSV) read ${declared.join(".")}` };
+      if (declared[0] < installed[0]) majorBehind.push(msg); // a full major behind — real staleness
+      else if (declared[1] < installed[1]) minorBehind.push(msg); // patch drift is normal; ignore
+    }
+  } catch { /* no package.json here */ }
+  const hint = "Bump the package.json range floor to the patched (installed) version so floor-reading scanners see it as patched.";
+  if (majorBehind.length) check("11b. No stale dependency floors (major behind lockfile)", "FAIL", majorBehind, hint);
+  else check("11b. No stale dependency floors (major behind lockfile)", "PASS");
+  if (minorBehind.length) check("11b-hygiene. Sensitive floors trail lockfile (minor)", "WARN", minorBehind, hint);
+}
+
 // 12. Unpinned Docker base image
 if (DOCKER.length) {
   const hits = [];

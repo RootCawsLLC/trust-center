@@ -1,0 +1,29 @@
+# Continuous dependency monitoring. Dependabot reads the DECLARED ranges (like
+# OSV/RepoSentry-style scanners do), raises security PRs on new advisories, and
+# keeps floors current — the layer the offline pre-deploy gate can't provide.
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    groups:
+      # Batch routine minor/patch bumps into one PR to reduce churn; security
+      # updates still come through immediately and separately.
+      minor-and-patch:
+        update-types: ["minor", "patch"]
+    labels:
+      - "dependencies"
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
