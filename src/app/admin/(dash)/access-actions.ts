@@ -6,6 +6,7 @@ import { requireOwner, requireWrite } from "@/lib/session";
 import { logAudit } from "@/lib/audit";
 import { AuthzError } from "@/lib/rbac";
 import { MODULES, type Level } from "@/lib/permissions";
+import { sanitizeScopes } from "@/lib/abac";
 import type { Role } from "@prisma/client";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
@@ -77,6 +78,24 @@ export async function saveGroupPermissions(
   if (!group) return { ok: false, error: "Group not found." };
   await prisma.group.update({ where: { id: groupId }, data: { permissions: clean } });
   await logAudit({ action: "GROUP_PERMISSIONS", actorUserId: session.user.id, actorEmail: session.user.email, targetType: "Group", targetId: groupId, metadata: { name: group.name } });
+  revalidatePath("/admin/groups");
+  revalidatePath("/admin/users");
+  return { ok: true };
+}
+
+// Save a group's ABAC attribute scope (Owner-managed).
+export async function saveGroupScopes(groupId: string, scopes: Record<string, string[]>): Promise<ActionResult> {
+  let session;
+  try {
+    session = await requireOwner();
+  } catch (e) {
+    return { ok: false, error: e instanceof AuthzError ? e.message : "Owner only" };
+  }
+  const clean = sanitizeScopes(scopes);
+  const group = await prisma.group.findUnique({ where: { id: groupId }, select: { name: true } });
+  if (!group) return { ok: false, error: "Group not found." };
+  await prisma.group.update({ where: { id: groupId }, data: { attributeScopes: clean } });
+  await logAudit({ action: "GROUP_SCOPE", actorUserId: session.user.id, actorEmail: session.user.email, targetType: "Group", targetId: groupId, metadata: { name: group.name, scopes: clean } });
   revalidatePath("/admin/groups");
   revalidatePath("/admin/users");
   return { ok: true };

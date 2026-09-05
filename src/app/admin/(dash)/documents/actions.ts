@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { nanoid } from "nanoid";
 import { prisma } from "@/lib/prisma";
 import { requireWrite } from "@/lib/session";
+import { getEffectiveScopes, canActOnDocumentRegions } from "@/lib/abac";
 import { putObject, deleteObject } from "@/lib/storage";
 import { documentSchema } from "@/lib/validation";
 import { logAudit } from "@/lib/audit";
@@ -127,6 +128,12 @@ export async function updateDocument(
   const existing = await prisma.document.findUnique({ where: { id } });
   if (!existing) return { ok: false, error: "Document not found" };
 
+  // ABAC: a region-scoped user can only edit documents within their scope.
+  const { scopes } = await getEffectiveScopes();
+  if (!canActOnDocumentRegions(existing.regions, scopes)) {
+    return { ok: false, error: "This document is outside your region scope." };
+  }
+
   const parsed = documentSchema.safeParse(fieldsFromForm(fd));
   if (!parsed.success) {
     const first = Object.values(parsed.error.flatten().fieldErrors)[0]?.[0];
@@ -219,6 +226,10 @@ export async function deleteDocument(id: string): Promise<ActionResult> {
     include: { _count: { select: { requests: true } } },
   });
   if (!doc) return { ok: false, error: "Document not found" };
+  const { scopes } = await getEffectiveScopes();
+  if (!canActOnDocumentRegions(doc.regions, scopes)) {
+    return { ok: false, error: "This document is outside your region scope." };
+  }
   if (doc._count.requests > 0) {
     return {
       ok: false,

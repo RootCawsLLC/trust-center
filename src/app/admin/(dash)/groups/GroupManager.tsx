@@ -2,9 +2,10 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Pencil, Trash2, X, Loader2, ShieldCheck, Lock } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Loader2, ShieldCheck, Lock, SlidersHorizontal } from "lucide-react";
 import { Pill } from "@/components/admin/ui";
-import { saveGroup, deleteGroup, saveGroupPermissions } from "../access-actions";
+import { ScopeModal, type ScopeAttr } from "@/components/admin/ScopeModal";
+import { saveGroup, deleteGroup, saveGroupPermissions, saveGroupScopes } from "../access-actions";
 
 type Level = "none" | "view" | "edit";
 export type ModuleDef = { key: string; label: string; ownerOnly?: boolean };
@@ -15,12 +16,14 @@ export type AdminGroup = {
   defaultRole: string;
   members: number;
   permissions: Record<string, Level>;
+  attributeScopes: Record<string, string[]>;
 };
 
-export function GroupManager({ groups, modules }: { groups: AdminGroup[]; modules: ModuleDef[] }) {
+export function GroupManager({ groups, modules, attributes }: { groups: AdminGroup[]; modules: ModuleDef[]; attributes: ScopeAttr[] }) {
   const [editing, setEditing] = useState<AdminGroup | null>(null);
   const [creating, setCreating] = useState(false);
   const [perms, setPerms] = useState<AdminGroup | null>(null);
+  const [scoping, setScoping] = useState<AdminGroup | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
   const router = useRouter();
@@ -65,6 +68,9 @@ export function GroupManager({ groups, modules }: { groups: AdminGroup[]; module
                 <button className="btn-ghost gap-1 px-2 text-sm text-brand-700" onClick={() => setPerms(g)}>
                   <ShieldCheck size={15} /> Permissions
                 </button>
+                <button className="btn-ghost gap-1 px-2 text-sm text-brand-700" onClick={() => setScoping(g)}>
+                  <SlidersHorizontal size={15} /> Scope
+                </button>
                 <button className="btn-ghost p-1.5" onClick={() => setEditing(g)}><Pencil size={15} /></button>
                 <button className="btn-ghost p-1.5 text-red-600 hover:bg-red-50" onClick={() => onDelete(g)} disabled={pending}><Trash2 size={15} /></button>
               </div>
@@ -78,6 +84,20 @@ export function GroupManager({ groups, modules }: { groups: AdminGroup[]; module
       )}
       {perms && (
         <PermissionMatrix group={perms} modules={modules} onClose={() => setPerms(null)} onSaved={() => { setPerms(null); router.refresh(); }} />
+      )}
+      {scoping && (
+        <ScopeModal
+          title={`Access scope · ${scoping.name}`}
+          subtitle="Members only see records matching these attribute values (empty = no restriction). Members' own per-user scope overrides this."
+          attributes={attributes}
+          current={scoping.attributeScopes}
+          onClose={() => setScoping(null)}
+          onSave={async (scopes) => {
+            const res = await saveGroupScopes(scoping.id, scopes);
+            if (res.ok) router.refresh();
+            return res;
+          }}
+        />
       )}
     </div>
   );

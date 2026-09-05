@@ -7,6 +7,7 @@ import { requireOwner } from "@/lib/session";
 import { userSchema } from "@/lib/validation";
 import { logAudit } from "@/lib/audit";
 import { AuthzError } from "@/lib/rbac";
+import { sanitizeScopes } from "@/lib/abac";
 import type { Role } from "@prisma/client";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
@@ -17,6 +18,23 @@ async function guard() {
   } catch (e) {
     throw e instanceof AuthzError ? e : new AuthzError();
   }
+}
+
+// Save a user's ABAC attribute scope override (Owner-managed).
+export async function saveUserScopes(id: string, scopes: Record<string, string[]>): Promise<ActionResult> {
+  let session;
+  try {
+    session = await guard();
+  } catch (e) {
+    return { ok: false, error: e instanceof AuthzError ? e.message : "Owner only" };
+  }
+  const clean = sanitizeScopes(scopes);
+  const user = await prisma.user.findUnique({ where: { id }, select: { email: true } });
+  if (!user) return { ok: false, error: "User not found." };
+  await prisma.user.update({ where: { id }, data: { attributeScopes: clean } });
+  await logAudit({ action: "USER_SCOPE", actorUserId: session.user.id, actorEmail: session.user.email, targetType: "User", targetId: id, metadata: { email: user.email, scopes: clean } });
+  revalidatePath("/admin/users");
+  return { ok: true };
 }
 
 export async function createUser(fd: FormData): Promise<ActionResult> {

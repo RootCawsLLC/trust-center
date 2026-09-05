@@ -43,6 +43,14 @@ const integrations = [
 for (const g of groups) {
   await p.group.upsert({ where: { name: g.name }, update: g, create: g });
 }
+
+// Demo ABAC scope: an "EU InfoSec" group scoped to the European Union region,
+// so the Groups UI shows an attribute scope in action.
+await p.group.upsert({
+  where: { name: "EU InfoSec" },
+  update: { attributeScopes: { region: ["European Union"], business_unit: ["EMEA"] } },
+  create: { name: "EU InfoSec", description: "InfoSec team scoped to EU content", defaultRole: "ADMIN", attributeScopes: { region: ["European Union"], business_unit: ["EMEA"] } },
+});
 for (const i of integrations) {
   await p.integration.upsert({ where: { key: i.key }, update: { name: i.name, category: i.category, note: i.note }, create: i });
 }

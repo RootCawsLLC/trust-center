@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Pencil, X, Loader2 } from "lucide-react";
-import { createUser, updateUser } from "./actions";
+import { Plus, Pencil, X, Loader2, SlidersHorizontal } from "lucide-react";
+import { ScopeModal, type ScopeAttr } from "@/components/admin/ScopeModal";
+import { createUser, updateUser, saveUserScopes } from "./actions";
 import { Pill } from "@/components/admin/ui";
 import { formatDate } from "@/lib/utils";
 
@@ -16,13 +17,15 @@ export type AdminUser = {
   isActive: boolean;
   hasPassword: boolean;
   createdAt: string;
+  attributeScopes: Record<string, string[]>;
 };
 
 export type GroupOption = { id: string; name: string; defaultRole: string };
 
-export function UserManager({ users, groups = [] }: { users: AdminUser[]; groups?: GroupOption[] }) {
+export function UserManager({ users, groups = [], attributes = [] }: { users: AdminUser[]; groups?: GroupOption[]; attributes?: ScopeAttr[] }) {
   const [editing, setEditing] = useState<AdminUser | null>(null);
   const [creating, setCreating] = useState(false);
+  const [scoping, setScoping] = useState<AdminUser | null>(null);
   const router = useRouter();
 
   return (
@@ -68,16 +71,36 @@ export function UserManager({ users, groups = [] }: { users: AdminUser[]; groups
                 <td className="px-4 py-3 text-xs text-ink-faint">
                   {formatDate(u.createdAt)}
                 </td>
-                <td className="px-4 py-3 text-right">
-                  <button className="btn-ghost p-1.5" onClick={() => setEditing(u)}>
-                    <Pencil size={15} />
-                  </button>
+                <td className="px-4 py-3">
+                  <div className="flex justify-end gap-1">
+                    <button className="btn-ghost gap-1 px-2 text-xs text-brand-700" onClick={() => setScoping(u)} title="Access scope">
+                      <SlidersHorizontal size={14} /> Scope
+                    </button>
+                    <button className="btn-ghost p-1.5" onClick={() => setEditing(u)}>
+                      <Pencil size={15} />
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      {scoping && (
+        <ScopeModal
+          title={`Access scope · ${scoping.email}`}
+          subtitle="This user only sees records matching these attribute values. A per-user value overrides the group's scope for that attribute; empty = inherit the group (or no restriction)."
+          attributes={attributes}
+          current={scoping.attributeScopes}
+          onClose={() => setScoping(null)}
+          onSave={async (scopes) => {
+            const res = await saveUserScopes(scoping.id, scopes);
+            if (res.ok) router.refresh();
+            return res;
+          }}
+        />
+      )}
 
       {(creating || editing) && (
         <UserForm

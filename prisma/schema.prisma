@@ -58,6 +58,9 @@ model User {
   groupId       String?
   group         Group?    @relation(fields: [groupId], references: [id])
   passwordHash  String? // set for local/credentials admins; null for pure-SSO users
+  // ABAC: per-user attribute scope, e.g. { "region": ["European Union"] }. Overrides
+  // the group's scope per attribute; empty/absent = unrestricted on that attribute.
+  attributeScopes Json?
   isActive      Boolean   @default(true)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -468,6 +471,8 @@ model Group {
   // Overlays the role default; owner-only modules stay OWNER-gated regardless.
   // Members of the group inherit it (see src/lib/permissions.ts).
   permissions Json?
+  // ABAC: group attribute scope inherited by members, e.g. { "region": [...] }.
+  attributeScopes Json?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

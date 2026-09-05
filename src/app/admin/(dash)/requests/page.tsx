@@ -7,6 +7,7 @@ import { SavedViews } from "@/components/admin/SavedViews";
 import { SortHeader } from "@/components/admin/SortHeader";
 import { RequestArchiveBar } from "@/components/admin/RequestArchiveBar";
 import { getSession } from "@/lib/session";
+import { getEffectiveScopes, requestScopeWhere } from "@/lib/abac";
 import { formatDate } from "@/lib/utils";
 import { dateRangeWhere, firstStr, orderByFromParams } from "@/lib/filters";
 
@@ -57,6 +58,11 @@ export default async function RequestsPage({ searchParams }: { searchParams: SP 
   const archivedIds = archivedRows.map((a) => a.downloadRequestId);
   if (view === "active" && archivedIds.length) where.id = { notIn: archivedIds };
   else if (view === "archived") where.id = { in: archivedIds.length ? archivedIds : ["__none__"] };
+
+  // ABAC: restrict to requests for documents within the caller's region scope.
+  const { scopes } = await getEffectiveScopes();
+  const reqScope = requestScopeWhere(scopes);
+  if (reqScope) where.AND = [reqScope];
 
   const requests = await prisma.downloadRequest.findMany({
     where,

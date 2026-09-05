@@ -23,6 +23,7 @@ const DEFAULTS = {
   "compliance.product": ["Platform", "GovCloud", "EU Region", "Mobile"],
   "certification.framework": FRAMEWORKS,
   "knowledge.category": KB_CATEGORIES,
+  "access.business_unit": ["Corporate", "Sales", "Engineering", "Public Sector", "EMEA", "Americas", "APAC"],
 };
 
 function uniq(arr) {

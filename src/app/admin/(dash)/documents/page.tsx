@@ -7,6 +7,7 @@ import { getSession } from "@/lib/session";
 import { DocumentManager, type AdminDoc } from "./DocumentManager";
 import { CATEGORY_ORDER, CATEGORY_SINGULAR, DOC_STATUSES } from "@/lib/constants";
 import { getTaxonomyOptions } from "@/lib/taxonomy";
+import { getEffectiveScopes, documentScopeWhere } from "@/lib/abac";
 import { firstStr } from "@/lib/filters";
 import type { Prisma } from "@prisma/client";
 
@@ -33,6 +34,11 @@ export default async function DocumentsPage({ searchParams }: { searchParams: SP
   if (CATEGORY_ORDER.includes(category as never)) where.category = category as never;
   if (visibility === "PUBLIC" || visibility === "PRIVATE") where.visibility = visibility;
   if (status) where.status = status;
+
+  // ABAC: restrict to the caller's region scope (unclassified docs stay visible).
+  const { scopes } = await getEffectiveScopes();
+  const scopeWhere = documentScopeWhere(scopes);
+  if (scopeWhere) where.AND = [scopeWhere];
 
   const [docs, templates, frameworks, industries, regions] = await Promise.all([
     prisma.document.findMany({

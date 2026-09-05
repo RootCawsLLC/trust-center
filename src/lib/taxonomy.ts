@@ -23,6 +23,7 @@ export const TAXONOMIES: TaxonomyDef[] = [
   { key: "compliance.product", label: "Products", group: "Compliance calendar", seed: ["Platform", "GovCloud", "EU Region", "Mobile"] },
   { key: "certification.framework", label: "Frameworks", group: "Certifications", seed: FRAMEWORKS },
   { key: "knowledge.category", label: "Categories", group: "FAQ", seed: KB_CATEGORIES },
+  { key: "access.business_unit", label: "Business units", group: "Access control", seed: ["Corporate", "Sales", "Engineering", "Public Sector", "EMEA", "Americas", "APAC"], hint: "Business units for attribute-based access scopes." },
 ];
 
 const REGISTRY = new Map(TAXONOMIES.map((t) => [t.key, t]));
