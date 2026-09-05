@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode, type ComponentType } from "react";
 import { FileText, Network, BookOpen, Megaphone, Search, ExternalLink, ChevronDown, Gauge, SplitSquareHorizontal, CalendarDays } from "lucide-react";
 import { DocumentLibrary, type LibraryDoc } from "./DocumentLibrary";
 import { cn } from "@/lib/utils";
@@ -77,52 +77,107 @@ export function TrustTabs({
     updates: showUpdates,
   };
   const tabs = TABS.filter((t) => visible[t.key]);
-  const [tab, setTab] = useState<(typeof TABS)[number]["key"]>("documents");
+  // Object-card layout (Reco/SafeBase style): each subject is a card that
+  // expands in place to "View more". Documents are the primary section and get
+  // their own full-width block below the grid.
+  const [open, setOpen] = useState<Set<string>>(new Set());
+  function toggle(key: string) {
+    setOpen((prev) => {
+      const n = new Set(prev);
+      if (n.has(key)) n.delete(key);
+      else n.add(key);
+      return n;
+    });
+  }
 
-  const counts: Record<string, number> = {
-    documents: docs.length,
-    risk: riskItems.length,
-    responsibility: raciItems.length,
-    calendar: events.length,
-    subprocessors: subprocessors.length,
-    knowledge: articles.length,
-    updates: updates.length,
+  const SECTION_META: Record<string, { desc: string; count: number; render: () => ReactNode }> = {
+    risk: { desc: "RTO, RPO, encryption, and other key security facts.", count: riskItems.length, render: () => <RiskProfile items={riskItems} /> },
+    responsibility: { desc: "Who owns each control — corporate, product, and you.", count: raciItems.length, render: () => <SharedResponsibility items={raciItems} /> },
+    calendar: { desc: "Planned audit windows and expected releases.", count: events.length, render: () => <Calendar items={events} /> },
+    subprocessors: { desc: "Third parties in our supply chain and their trust pages.", count: subprocessors.length, render: () => <Subprocessors items={subprocessors} /> },
+    knowledge: { desc: "Answers to common security-review questions.", count: articles.length, render: () => <Knowledge items={articles} /> },
+    updates: { desc: "Recent security, compliance, and product changes.", count: updates.length, render: () => <Updates items={updates} /> },
   };
+  const gridSections = tabs.filter((t) => t.key !== "documents");
 
   return (
-    <div>
-      <div className="mb-6 flex gap-1 overflow-x-auto border-b border-slate-200">
-        {tabs.map((t) => {
-          const Icon = t.icon;
-          const active = tab === t.key;
-          return (
-            <button
-              key={t.key}
-              onClick={() => setTab(t.key)}
-              className={cn(
-                "flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-medium transition",
-                active
-                  ? "border-brand-600 text-brand-700"
-                  : "border-transparent text-ink-faint hover:text-ink",
-              )}
-            >
-              <Icon size={15} />
-              {t.label}
-              <span className="rounded-full bg-slate-100 px-1.5 text-xs text-ink-faint">
-                {counts[t.key]}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+    <div className="space-y-10">
+      {gridSections.length > 0 && (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {gridSections.map((t) => {
+            const meta = SECTION_META[t.key];
+            return (
+              <SectionCard
+                key={t.key}
+                icon={t.icon}
+                label={t.label}
+                desc={meta.desc}
+                count={meta.count}
+                open={open.has(t.key)}
+                onToggle={() => toggle(t.key)}
+              >
+                {meta.render()}
+              </SectionCard>
+            );
+          })}
+        </div>
+      )}
 
-      {tab === "documents" && <DocumentLibrary docs={docs} />}
-      {tab === "risk" && <RiskProfile items={riskItems} />}
-      {tab === "responsibility" && <SharedResponsibility items={raciItems} />}
-      {tab === "calendar" && <Calendar items={events} />}
-      {tab === "subprocessors" && <Subprocessors items={subprocessors} />}
-      {tab === "knowledge" && <Knowledge items={articles} />}
-      {tab === "updates" && <Updates items={updates} />}
+      {/* Documents — the primary resource, always expanded and full width. */}
+      <section>
+        <div className="mb-4 flex items-center gap-2.5">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
+            <FileText size={18} />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold tracking-tight text-ink">Document library</h2>
+            <p className="text-sm text-ink-faint">{docs.length} document{docs.length === 1 ? "" : "s"} · downloads require a short form; confidential documents also require an NDA.</p>
+          </div>
+        </div>
+        <DocumentLibrary docs={docs} />
+      </section>
+    </div>
+  );
+}
+
+function SectionCard({
+  icon: Icon,
+  label,
+  desc,
+  count,
+  open,
+  onToggle,
+  children,
+}: {
+  icon: ComponentType<{ size?: number; className?: string }>;
+  label: string;
+  desc: string;
+  count: number;
+  open: boolean;
+  onToggle: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <div className={cn("card p-5 transition", open && "sm:col-span-2 lg:col-span-3")}>
+      <button onClick={onToggle} className="flex w-full items-start justify-between gap-3 text-left">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
+            <Icon size={18} />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="font-semibold text-ink">{label}</h3>
+              <span className="rounded-full bg-slate-100 px-1.5 text-xs text-ink-faint">{count}</span>
+            </div>
+            <p className="mt-0.5 text-sm text-ink-faint">{desc}</p>
+          </div>
+        </div>
+        <span className="inline-flex shrink-0 items-center gap-1 text-sm font-medium text-brand-700">
+          {open ? "Show less" : "View more"}
+          <ChevronDown size={15} className={cn("transition", open && "rotate-180")} />
+        </span>
+      </button>
+      {open && <div className="mt-4 border-t border-slate-100 pt-4">{children}</div>}
     </div>
   );
 }
@@ -389,7 +444,7 @@ function Calendar({ items }: { items: CalendarEvent[] }) {
   );
 }
 
-function Empty({ children }: { children: React.ReactNode }) {
+function Empty({ children }: { children: ReactNode }) {
   return (
     <div className="card p-10 text-center text-sm text-ink-faint">{children}</div>
   );

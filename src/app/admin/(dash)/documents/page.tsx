@@ -6,6 +6,7 @@ import { SavedViews } from "@/components/admin/SavedViews";
 import { getSession } from "@/lib/session";
 import { DocumentManager, type AdminDoc } from "./DocumentManager";
 import { CATEGORY_ORDER, CATEGORY_SINGULAR, DOC_STATUSES } from "@/lib/constants";
+import { getTaxonomyOptions } from "@/lib/taxonomy";
 import { firstStr } from "@/lib/filters";
 import type { Prisma } from "@prisma/client";
 
@@ -33,7 +34,7 @@ export default async function DocumentsPage({ searchParams }: { searchParams: SP
   if (visibility === "PUBLIC" || visibility === "PRIVATE") where.visibility = visibility;
   if (status) where.status = status;
 
-  const [docs, templates] = await Promise.all([
+  const [docs, templates, frameworks, industries, regions] = await Promise.all([
     prisma.document.findMany({
       where,
       orderBy: { updatedAt: "desc" },
@@ -44,6 +45,9 @@ export default async function DocumentsPage({ searchParams }: { searchParams: SP
       orderBy: { name: "asc" },
       select: { id: true, name: true },
     }),
+    getTaxonomyOptions("document.framework"),
+    getTaxonomyOptions("document.industry"),
+    getTaxonomyOptions("document.region"),
   ]);
 
   const session = await getSession();
@@ -103,7 +107,7 @@ export default async function DocumentsPage({ searchParams }: { searchParams: SP
           },
         ]}
       />
-      <DocumentManager docs={adminDocs} ndaTemplates={templates} />
+      <DocumentManager docs={adminDocs} ndaTemplates={templates} taxonomies={{ frameworks, industries, regions }} />
     </div>
   );
 }

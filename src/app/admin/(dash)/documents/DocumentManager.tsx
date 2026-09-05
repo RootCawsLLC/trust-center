@@ -6,7 +6,9 @@ import Link from "next/link";
 import { Plus, Pencil, Trash2, X, Lock, Globe, Loader2, Upload, ChevronUp, ChevronDown, ChevronsUpDown, Eye, History } from "lucide-react";
 import { createDocument, updateDocument, deleteDocument } from "./actions";
 import { bytesToSize } from "@/lib/utils";
-import { CATEGORY_SINGULAR, INDUSTRIES, REGIONS, FRAMEWORKS, DOC_STATUSES } from "@/lib/constants";
+import { CATEGORY_SINGULAR, DOC_STATUSES } from "@/lib/constants";
+
+export type DocTaxonomies = { frameworks: string[]; industries: string[]; regions: string[] };
 import { Pill } from "@/components/admin/ui";
 import type { DocumentCategory } from "@prisma/client";
 
@@ -51,9 +53,11 @@ const CATEGORIES: DocumentCategory[] = [
 export function DocumentManager({
   docs,
   ndaTemplates,
+  taxonomies,
 }: {
   docs: AdminDoc[];
   ndaTemplates: { id: string; name: string }[];
+  taxonomies: DocTaxonomies;
 }) {
   const [editing, setEditing] = useState<AdminDoc | null>(null);
   const [creating, setCreating] = useState(false);
@@ -204,6 +208,7 @@ export function DocumentManager({
         <DocumentForm
           doc={editing}
           ndaTemplates={ndaTemplates}
+          taxonomies={taxonomies}
           onClose={() => {
             setCreating(false);
             setEditing(null);
@@ -257,11 +262,13 @@ function TagChecks({
 function DocumentForm({
   doc,
   ndaTemplates,
+  taxonomies,
   onClose,
   onSaved,
 }: {
   doc: AdminDoc | null;
   ndaTemplates: { id: string; name: string }[];
+  taxonomies: DocTaxonomies;
   onClose: () => void;
   onSaved: () => void;
 }) {
@@ -359,9 +366,9 @@ function DocumentForm({
               </div>
             )}
           </div>
-          <TagChecks name="frameworks" label="Frameworks" options={FRAMEWORKS} selected={doc?.frameworks ?? []} />
-          <TagChecks name="industries" label="Industries" options={INDUSTRIES} selected={doc?.industries ?? []} />
-          <TagChecks name="regions" label="Regions" options={REGIONS} selected={doc?.regions ?? []} />
+          <TagChecks name="frameworks" label="Frameworks" options={taxonomies.frameworks} selected={doc?.frameworks ?? []} />
+          <TagChecks name="industries" label="Industries" options={taxonomies.industries} selected={doc?.industries ?? []} />
+          <TagChecks name="regions" label="Regions" options={taxonomies.regions} selected={doc?.regions ?? []} />
 
           <div>
             <label className="label">
