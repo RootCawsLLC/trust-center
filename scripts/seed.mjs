@@ -75,11 +75,45 @@ async function storeBlob(key, buf, contentType) {
   await fs.writeFile(`${p}.type`, contentType, "utf8");
 }
 
+const DEFAULT_ADMIN_PASSWORD = "ChangeMe!Admin123";
+const DEFAULT_VIEWER_PASSWORD = "ChangeMe!Viewer123";
+
 async function main() {
+  // Guard: this script seeds demo content and default-password users for
+  // local/UAT review. It must never silently run against a production database,
+  // where it would mint known-credential admins and demo data. Block it there
+  // unless the operator explicitly opts in - and even then, refuse to persist a
+  // known default password.
+  const isProd = process.env.NODE_ENV === "production";
+  if (isProd && process.env.ALLOW_PRODUCTION_SEED !== "1") {
+    console.error(
+      "[seed] Refusing to run with NODE_ENV=production. This seeds demo data and\n" +
+        "       default-password users for local/UAT only. If you really intend to\n" +
+        "       seed a production database, set ALLOW_PRODUCTION_SEED=1 and provide\n" +
+        "       strong SEED_ADMIN_PASSWORD / SEED_VIEWER_PASSWORD values.",
+    );
+    process.exit(1);
+  }
+
   // --- Users (credentials-based for pre-SSO review) ---
   const adminEmail = (process.env.SEED_ADMIN_EMAIL ?? "admin@trustcenter.local").toLowerCase();
-  const adminPass = process.env.SEED_ADMIN_PASSWORD ?? "ChangeMe!Admin123";
+  const adminPass = process.env.SEED_ADMIN_PASSWORD ?? DEFAULT_ADMIN_PASSWORD;
   const adminName = process.env.SEED_ADMIN_NAME ?? "Trust Center Admin";
+  const viewerPass = process.env.SEED_VIEWER_PASSWORD ?? DEFAULT_VIEWER_PASSWORD;
+
+  // Belt-and-braces: even with the escape hatch set, never write a known default
+  // password to a production database.
+  if (isProd) {
+    const stillDefault = [];
+    if (adminPass === DEFAULT_ADMIN_PASSWORD) stillDefault.push("SEED_ADMIN_PASSWORD");
+    if (viewerPass === DEFAULT_VIEWER_PASSWORD) stillDefault.push("SEED_VIEWER_PASSWORD");
+    if (stillDefault.length) {
+      console.error(
+        `[seed] Refusing to seed default password(s) into production. Set ${stillDefault.join(", ")} to strong, non-default value(s).`,
+      );
+      process.exit(1);
+    }
+  }
 
   const owner = await prisma.user.upsert({
     where: { email: adminEmail },
@@ -100,7 +134,7 @@ async function main() {
       email: "viewer@trustcenter.local",
       name: "Read-Only Analyst",
       role: "VIEWER",
-      passwordHash: await bcrypt.hash("ChangeMe!Viewer123", 12),
+      passwordHash: await bcrypt.hash(viewerPass, 12),
       isActive: true,
     },
   });

@@ -54,7 +54,10 @@ complete before UAT.
 
 - **SSO is scaffolded, not wired.** Okta/Google providers are implemented but off
   until real tenant credentials are supplied. The seeded credentials admin is the
-  login path for review.
+  login path for review. `npm run seed` refuses to run against a production
+  database (`NODE_ENV=production`) unless `ALLOW_PRODUCTION_SEED=1` is set and the
+  default `SEED_ADMIN_PASSWORD` / `SEED_VIEWER_PASSWORD` are changed, so the
+  default-password users cannot be created in production by accident.
 - **Salesforce is a seeded mock table** (`MockSalesforceCustomer`). The matching
   logic is isolated in `src/lib/salesforce.ts`; going live means replacing one
   function with a real SOQL query.
