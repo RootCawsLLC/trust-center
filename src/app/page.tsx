@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ShieldCheck, ArrowRight, Lock } from "lucide-react";
+import { ShieldCheck, Lock } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { CertBadge } from "@/components/marketing/CertBadge";
 import { type LibraryDoc } from "@/components/download/DocumentLibrary";
@@ -198,13 +198,8 @@ export default async function HomePage() {
       </section>
 
       <footer className="border-t border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-6 py-8 text-sm text-ink-faint sm:flex-row">
-          <span>
-            © {new Date().getFullYear()} {settings.companyName}. All rights reserved.
-          </span>
-          <Link href="/admin" className="inline-flex items-center gap-1 hover:text-ink">
-            Vendor admin <ArrowRight size={13} />
-          </Link>
+        <div className="mx-auto max-w-6xl px-6 py-8 text-sm text-ink-faint">
+          © {new Date().getFullYear()} {settings.companyName}. All rights reserved.
         </div>
       </footer>
 
