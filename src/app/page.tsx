@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ShieldCheck, ArrowRight } from "lucide-react";
+import { ShieldCheck, ArrowRight, Lock } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { CertBadge } from "@/components/marketing/CertBadge";
 import { type LibraryDoc } from "@/components/download/DocumentLibrary";
@@ -14,11 +14,15 @@ function uniqueSorted(v: string[]) {
 }
 
 export default async function HomePage() {
-  const [settings, docs, subprocessors, articles, updates, riskItems, raciItems, events] = await Promise.all([
+  const [settings, docs, certifications, subprocessors, articles, updates, riskItems, raciItems, events] = await Promise.all([
     getOrgSettings(),
     prisma.document.findMany({
       where: { isPublished: true },
       orderBy: [{ category: "asc" }, { title: "asc" }],
+    }),
+    prisma.certification.findMany({
+      where: { isPublished: true },
+      orderBy: [{ sortOrder: "asc" }, { displayName: "asc" }],
     }),
     prisma.subprocessor.findMany({ where: { isActive: true }, orderBy: { sortOrder: "asc" } }),
     prisma.knowledgeArticle.findMany({ where: { isPublished: true }, orderBy: { sortOrder: "asc" } }),
@@ -43,11 +47,28 @@ export default async function HomePage() {
     frameworks: d.frameworks,
   }));
 
-  const badges = uniqueSorted(
+  // Badges are driven by the admin-managed Certification records first (they
+  // carry status + a real detail-page slug). Any framework that only appears on
+  // published documents — with no Certification record yet — is appended so
+  // nothing silently disappears from the public wall.
+  type Badge = { key: string; name: string; framework: string; slug?: string; status?: string };
+  const certBadges: Badge[] = certifications.map((c) => ({
+    key: c.id,
+    name: c.displayName,
+    framework: c.framework,
+    slug: c.slug,
+    status: c.status,
+  }));
+  const coveredFrameworks = new Set(certifications.map((c) => c.framework));
+  const docFrameworks = uniqueSorted(
     docs
       .filter((d) => d.category === "CERTIFICATION" || d.category === "AUDIT")
       .flatMap((d) => d.frameworks),
-  );
+  ).filter((f) => !coveredFrameworks.has(f));
+  const badges: Badge[] = [
+    ...certBadges,
+    ...docFrameworks.map((f) => ({ key: f, name: f, framework: f })),
+  ];
 
   return (
     <div className="min-h-screen">
@@ -60,16 +81,24 @@ export default async function HomePage() {
             </div>
             <span className="font-semibold text-ink">{settings.companyName} Trust Center</span>
           </div>
-          {settings.statusPageUrl && (
-            <a
-              href={settings.statusPageUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-soft hover:text-brand-700"
+          <div className="flex items-center gap-4">
+            {settings.statusPageUrl && (
+              <a
+                href={settings.statusPageUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-soft hover:text-brand-700"
+              >
+                <span className="h-2 w-2 rounded-full bg-emerald-500" /> System status
+              </a>
+            )}
+            <Link
+              href="/admin"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-ink-soft transition hover:border-brand-300 hover:text-brand-700"
             >
-              <span className="h-2 w-2 rounded-full bg-emerald-500" /> System status
-            </a>
-          )}
+              <Lock size={13} /> Vendor admin
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -94,7 +123,7 @@ export default async function HomePage() {
               </div>
               <div className="flex flex-wrap gap-4">
                 {badges.map((b) => (
-                  <CertBadge key={b} name={b} />
+                  <CertBadge key={b.key} name={b.name} framework={b.framework} slug={b.slug} status={b.status} />
                 ))}
               </div>
             </div>

@@ -220,17 +220,25 @@ language in the admin console before UAT.`;
   }
 
   // --- Subprocessors / Knowledge base / Updates (only if empty) ---
+  // `website` points at each provider's own trust/security portal (not their
+  // marketing homepage) so the public "visit their trust center" links resolve
+  // to the page a reviewer actually wants.
+  const subprocessorSeed = [
+    { name: "Amazon Web Services", purpose: "Cloud infrastructure & hosting", location: "United States (us-east-1)", website: "https://aws.amazon.com/compliance/", sortOrder: 1 },
+    { name: "Cloudflare", purpose: "CDN & DDoS protection", location: "Global", website: "https://www.cloudflare.com/trust-hub/", sortOrder: 2 },
+    { name: "Datadog", purpose: "Application & infrastructure monitoring", location: "United States", website: "https://www.datadoghq.com/security/", sortOrder: 3 },
+    { name: "Stripe", purpose: "Payment processing", location: "United States", website: "https://stripe.com/docs/security", sortOrder: 4 },
+    { name: "Twilio SendGrid", purpose: "Transactional email", location: "United States", website: "https://www.twilio.com/en-us/security", sortOrder: 5 },
+    { name: "Snowflake", purpose: "Data warehousing & analytics", location: "European Union (eu-central-1)", website: "https://www.snowflake.com/en/trust-center/", sortOrder: 6 },
+  ];
   if ((await prisma.subprocessor.count()) === 0) {
-    await prisma.subprocessor.createMany({
-      data: [
-        { name: "Amazon Web Services", purpose: "Cloud infrastructure & hosting", location: "United States (us-east-1)", website: "https://aws.amazon.com", sortOrder: 1 },
-        { name: "Cloudflare", purpose: "CDN & DDoS protection", location: "Global", website: "https://cloudflare.com", sortOrder: 2 },
-        { name: "Datadog", purpose: "Application & infrastructure monitoring", location: "United States", website: "https://datadoghq.com", sortOrder: 3 },
-        { name: "Stripe", purpose: "Payment processing", location: "United States", website: "https://stripe.com", sortOrder: 4 },
-        { name: "Twilio SendGrid", purpose: "Transactional email", location: "United States", website: "https://sendgrid.com", sortOrder: 5 },
-        { name: "Snowflake", purpose: "Data warehousing & analytics", location: "European Union (eu-central-1)", website: "https://snowflake.com", sortOrder: 6 },
-      ],
-    });
+    await prisma.subprocessor.createMany({ data: subprocessorSeed });
+  } else {
+    // Idempotent repair: correct the trust-portal URL on already-seeded rows
+    // (earlier seeds pointed these at marketing homepages).
+    for (const s of subprocessorSeed) {
+      await prisma.subprocessor.updateMany({ where: { name: s.name }, data: { website: s.website } });
+    }
   }
   if ((await prisma.knowledgeArticle.count()) === 0) {
     await prisma.knowledgeArticle.createMany({

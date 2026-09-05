@@ -172,7 +172,7 @@ function DocRow({ doc, checked, onToggle, onOpen }: { doc: LibraryDoc; checked: 
           aria-label={`Select ${doc.title}`}
         />
         {isPrivate ? (
-          <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-200"><Lock size={10} /> NDA</span>
+          <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-200"><Lock size={10} /> Private</span>
         ) : (
           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-200"><Globe size={10} /> Public</span>
         )}

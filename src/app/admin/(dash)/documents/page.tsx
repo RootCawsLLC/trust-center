@@ -3,8 +3,8 @@ import { PageHeader } from "@/components/admin/ui";
 import { FilterBar } from "@/components/admin/FilterBar";
 import { SavedViews } from "@/components/admin/SavedViews";
 import { getSession } from "@/lib/session";
-import { DocumentManager, DOC_STATUSES, type AdminDoc } from "./DocumentManager";
-import { CATEGORY_ORDER, CATEGORY_SINGULAR } from "@/lib/constants";
+import { DocumentManager, type AdminDoc } from "./DocumentManager";
+import { CATEGORY_ORDER, CATEGORY_SINGULAR, DOC_STATUSES } from "@/lib/constants";
 import { firstStr } from "@/lib/filters";
 import type { Prisma } from "@prisma/client";
 

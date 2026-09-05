@@ -20,25 +20,47 @@ const STYLE: Record<string, { ring: string; text: string; short: string }> = {
   "EU AI Act": { ring: "ring-emerald-300 bg-emerald-50", text: "text-emerald-700", short: "EU AI" },
 };
 
-export function CertBadge({ name }: { name: string }) {
-  const s = STYLE[name] ?? {
+// `framework` picks the visual style; `name` is the display label; `slug`
+// (when supplied by a managed Certification record) is the detail-page target;
+// `status` renders a small state chip for anything not fully certified.
+export function CertBadge({
+  name,
+  framework,
+  slug,
+  status,
+}: {
+  name: string;
+  framework?: string;
+  slug?: string;
+  status?: string;
+}) {
+  const styleKey = framework ?? name;
+  const s = STYLE[styleKey] ?? {
     ring: "ring-brand-300 bg-brand-50",
     text: "text-brand-700",
-    short: name.slice(0, 6),
+    short: (framework ?? name).slice(0, 6),
   };
+  const inProgress = status && status !== "Certified";
   return (
     <Link
-      href={`/cert/${slugify(name)}`}
+      href={`/cert/${slug ?? slugify(name)}`}
       className="group flex w-20 flex-col items-center gap-1.5"
       title={`${name} — learn more`}
     >
-      <div
-        className={`flex h-16 w-16 flex-col items-center justify-center rounded-full text-center ring-2 transition group-hover:scale-105 group-hover:shadow-lift ${s.ring}`}
-      >
-        <ShieldCheck size={14} className={s.text} />
-        <span className={`whitespace-pre-line text-[10px] font-bold leading-tight ${s.text}`}>
-          {s.short}
-        </span>
+      <div className="relative">
+        <div
+          className={`flex h-16 w-16 flex-col items-center justify-center rounded-full text-center ring-2 transition group-hover:scale-105 group-hover:shadow-lift ${s.ring}`}
+        >
+          <ShieldCheck size={14} className={s.text} />
+          <span className={`whitespace-pre-line text-[10px] font-bold leading-tight ${s.text}`}>
+            {s.short}
+          </span>
+        </div>
+        {inProgress && (
+          <span className="absolute -right-1 -top-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-semibold text-amber-700 ring-1 ring-inset ring-amber-300">
+            {status === "In progress" ? "In progress" : status}
+          </span>
+        )}
       </div>
       <span className="text-center text-[11px] font-medium leading-tight text-ink group-hover:text-brand-700">
         {name}

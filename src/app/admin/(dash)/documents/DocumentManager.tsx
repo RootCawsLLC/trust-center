@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Plus, Pencil, Trash2, X, Lock, Globe, Loader2, Upload, ChevronUp, ChevronDown, ChevronsUpDown, Eye, History } from "lucide-react";
 import { createDocument, updateDocument, deleteDocument } from "./actions";
 import { bytesToSize } from "@/lib/utils";
-import { CATEGORY_SINGULAR, INDUSTRIES, REGIONS, FRAMEWORKS } from "@/lib/constants";
+import { CATEGORY_SINGULAR, INDUSTRIES, REGIONS, FRAMEWORKS, DOC_STATUSES } from "@/lib/constants";
 import { Pill } from "@/components/admin/ui";
 import type { DocumentCategory } from "@prisma/client";
 
@@ -27,8 +27,6 @@ export type AdminDoc = {
   regions: string[];
   frameworks: string[];
 };
-
-export const DOC_STATUSES = ["Draft", "In review", "Planning", "Published", "Archived", "Revoked"] as const;
 
 const STATUS_TONE: Record<string, "slate" | "amber" | "emerald" | "red" | "blue"> = {
   Draft: "slate",

@@ -103,6 +103,19 @@ export const COUNTRIES = [
   "Other",
 ];
 
+// Document lifecycle statuses. Lives here (a plain module) rather than in the
+// "use client" DocumentManager: a Server Component that imports a value from a
+// client module gets a client-reference proxy, not the array, so `.map` throws.
+export const DOC_STATUSES = [
+  "Draft",
+  "In review",
+  "Planning",
+  "Published",
+  "Archived",
+  "Revoked",
+] as const;
+export type DocStatus = (typeof DOC_STATUSES)[number];
+
 export const KB_CATEGORIES = [
   "General",
   "Security",
