@@ -41,7 +41,7 @@
     "clsx": "^2.1.1",
     "exceljs": "^4.4.0",
     "jszip": "^3.10.1",
-    "lucide-react": "^0.469.0",
+    "lucide-react": "^1.39.0",
     "mammoth": "^1.12.2",
     "nanoid": "^5.1.16",
     "next": "^15.5.25",
